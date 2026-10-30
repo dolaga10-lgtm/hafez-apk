@@ -140,6 +140,75 @@
     #hzTour button.sec{background:transparent;color:#d9b866;border:1px solid #6b5636}
     #hzTour .skip{display:block;margin:8px auto 0;background:none!important;border:0!important;color:#a89874!important;font-size:12px!important;flex:none}
   </style>
+  <style>
+/* ===== HZX: compact header / HUD / settings / modals ===== */
+header{padding:max(.25rem,env(safe-area-inset-top)) .5rem .25rem!important}
+#hzHistBar{display:none!important}
+#hzRow{display:flex;align-items:center;gap:4px;flex-wrap:nowrap}
+#hzRow #hzProj{display:flex;gap:2px;flex:none}
+#hzRow #wallTabsContainer{flex:1 1 auto;min-width:0}
+#hzRow>button{flex:none}
+.hzIc{width:34px;height:32px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;position:relative;border:1px solid var(--border-col);background:var(--bg-sub);color:var(--text-main)}
+.hzIc img{width:100%;height:100%;border-radius:12px;object-fit:cover}
+.hzIc small{position:absolute;top:-5px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:#f59e0b;color:#1e293b;font:900 10px/16px Cairo,sans-serif;text-align:center;padding:0 3px}
+#hzDrawerRow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding-bottom:6px;border-bottom:1px solid rgba(100,116,139,.3)}
+/* HUD undo/redo */
+#floatingSelectionHUD #hzUndo,#floatingSelectionHUD #hzRedo{width:38px;height:34px;border-radius:12px;border:1.5px solid #f59e0b;background:rgba(245,158,11,.15);color:#fbbf24;font:900 17px Cairo,sans-serif;position:relative;flex:none}
+#floatingSelectionHUD #hzUndo:disabled,#floatingSelectionHUD #hzRedo:disabled{opacity:.35}
+#floatingSelectionHUD #hzUn{position:absolute;top:-6px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:#f59e0b;color:#1e293b;font:900 10px/16px Cairo,sans-serif}
+#floatingSelectionHUD .hzDia{display:flex;align-items:center;gap:4px;font:800 10px Cairo,sans-serif}
+#hzBeamAttach{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding-bottom:4px;font:800 10px Cairo,sans-serif}
+#hzBeamAttach select{border:1px solid var(--border-col);background:var(--bg-sub);color:var(--text-main);border-radius:8px;padding:2px 4px;font:700 10px Cairo,sans-serif}
+/* wall nav + zoom */
+.hzNav{position:absolute;top:46%;z-index:19;width:30px;height:62px;border:0;background:rgba(245,158,11,.88);color:#1e293b;font:900 20px/1 Cairo,sans-serif;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+.hzNav small{font:900 10px Cairo,sans-serif}
+#hzNavL{left:0;border-radius:0 14px 14px 0}
+#hzNavR{right:0;border-radius:14px 0 0 14px}
+#hzZoomBar{position:absolute;top:8px;right:8px;z-index:19;display:flex;flex-direction:column;gap:5px}
+#hzZoomBar button{width:34px;height:34px;border-radius:12px;border:1.5px solid #f59e0b;background:rgba(15,23,42,.82);color:#fbbf24;font:900 17px Cairo,sans-serif;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+#hzZoomBar #hzZR{background:#f59e0b;color:#1e293b;font-size:11px;width:auto;padding:0 8px;display:none}
+#hzLoupe{position:absolute;z-index:40;pointer-events:none;width:112px;height:112px;border-radius:50%;border:3px solid #f59e0b;box-shadow:0 6px 20px rgba(0,0,0,.55);display:none;background:#fff}
+#hzToast{position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:9000;background:rgba(15,23,42,.95);color:#fde68a;border:1.5px solid #f59e0b;border-radius:14px;padding:8px 14px;font:800 12px Cairo,sans-serif;display:none;align-items:center;gap:10px;max-width:92vw}
+#hzToast button{background:#f59e0b;color:#1e293b;border:0;border-radius:9px;padding:3px 10px;font:900 12px Cairo,sans-serif}
+/* settings popover */
+#hzSettings{position:fixed;z-index:9500;top:calc(env(safe-area-inset-top) + 44px);left:8px;right:8px;max-width:400px;margin:0 auto;max-height:calc(100dvh - 70px);overflow-y:auto;background:var(--bg-card);color:var(--text-main);border:2px solid #f59e0b;border-radius:18px;padding:12px;box-shadow:0 14px 40px rgba(0,0,0,.5);display:none;font-family:Cairo,sans-serif}
+#hzSettings h4{margin:10px 0 6px;font-weight:900;font-size:12px;color:#f59e0b}
+#hzSettings .row{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-bottom:1px solid rgba(100,116,139,.25);font-weight:700;font-size:12px}
+#hzSettings .seg{display:flex;gap:4px}
+#hzSettings .seg button,#hzSettings select{border:1px solid var(--border-col);background:var(--bg-sub);color:var(--text-main);border-radius:10px;padding:5px 9px;font:800 11px Cairo,sans-serif}
+#hzSettings .seg button.on{background:#f59e0b;color:#1e293b;border-color:#f59e0b}
+#hzSettings .sw{width:42px;height:24px;border-radius:12px;background:#64748b;position:relative;border:0;flex:none}
+#hzSettings .sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .15s}
+#hzSettings .sw.on{background:#10b981}
+#hzSettings .sw.on::after{left:21px}
+#hzSettings .acc{display:flex;align-items:center;gap:10px}
+#hzSettings .av{width:54px;height:54px;border-radius:50%;border:2px solid #f59e0b;background:var(--bg-sub);display:flex;align-items:center;justify-content:center;font-size:24px;overflow:hidden;flex:none}
+#hzSettings .av img{width:100%;height:100%;object-fit:cover}
+#hzSettings .btn,.hzModal .btn{border:0;border-radius:10px;padding:7px 12px;font:900 12px Cairo,sans-serif;background:#f59e0b;color:#1e293b}
+#hzSettings .btn.sec,.hzModal .btn.sec{background:var(--bg-sub);color:var(--text-main);border:1px solid var(--border-col)}
+#hzSettings .btn.red,.hzModal .btn.red{background:#e11d48;color:#fff}
+/* modals */
+.hzModal{position:fixed;inset:0;z-index:9600;background:rgba(0,0,0,.55);display:none;align-items:flex-end;justify-content:center;font-family:Cairo,sans-serif}
+.hzModal .card{width:100%;max-width:480px;max-height:88dvh;display:flex;flex-direction:column;background:var(--bg-card);color:var(--text-main);border:2px solid #f59e0b;border-radius:22px 22px 0 0;padding:12px;margin-bottom:0}
+.hzModal h3{font-weight:900;font-size:15px;margin:0 0 8px;display:flex;justify-content:space-between;align-items:center}
+.hzModal .list{overflow-y:auto;flex:1;min-height:60px}
+.hzModal .item{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid rgba(100,116,139,.25)}
+.hzModal input[type=text]{flex:1;min-width:0;border:1px solid var(--border-col);background:var(--bg-sub);color:var(--text-main);border-radius:10px;padding:7px 9px;font:700 13px Cairo,sans-serif}
+.hzModal .tools{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.hzModal .empty{font-weight:700;font-size:12px;opacity:.75;padding:10px;text-align:center}
+#hz3D{position:fixed;inset:0;z-index:9700;background:#0f172a;display:none;flex-direction:column}
+#hz3D .bar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:max(8px,env(safe-area-inset-top)) 10px 8px;color:#fde68a;font:900 13px Cairo,sans-serif}
+#hz3D canvas{flex:1;width:100%;min-height:0;touch-action:none}
+#hz3D .btn{border:0;border-radius:10px;padding:6px 12px;font:900 12px Cairo,sans-serif;background:#f59e0b;color:#1e293b}
+/* UI size / hand mode */
+body.ui-s #floatingSelectionHUD,body.ui-s header{zoom:.9}
+body.ui-l #floatingSelectionHUD,body.ui-l header,body.ui-l #floatingToolsPopover{zoom:1.15}
+body.hand-left #btnFloatingToolsFAB{right:auto!important;left:12px!important}
+body.hand-left #floatingToolsPopover{right:auto!important;left:12px!important}
+body.hand-left #floatingSelectionHUD{left:4.5rem!important;right:.5rem!important}
+body.hand-left #hudNudgeControlsRow{direction:rtl}
+body.hand-left #hzZoomBar{right:auto;left:8px}
+  </style>
 </head>
 <body class="light-mode h-[100dvh] w-screen overflow-hidden flex flex-col">
 <div id="hzSplash"><div class="im"></div><div class="glow"></div><div class="shine"></div><div id="hzSpk"></div><div id="hzTag"><b>خبرة منذ سنة 1980</b><span>في تصنيع المطابخ الألومنيوم والخشب</span><span>وجميع أعمال الأخشاب والمشاريع والواجهات الزجاجية</span></div></div>
@@ -905,6 +974,7 @@
       ceilingHeight: 285,
       wallThickness: 12,
       notes: '',
+      notesList: [],
       activeWallIndex: 0,
       previewMode: 'elevation',
       selectedElementId: null,
@@ -2045,25 +2115,43 @@
       ctx.restore();
     }
 
+    function hzDimLabel(ctx, xa, xb, y, text, W) {
+      ctx.save();
+      ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(xa, y); ctx.lineTo(xb, y);
+      ctx.moveTo(xa, y - 5); ctx.lineTo(xa, y + 5); ctx.moveTo(xb, y - 5); ctx.lineTo(xb, y + 5); ctx.stroke();
+      ctx.font = '800 11px Cairo, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      const bw = ctx.measureText(text).width + 18, bh = 21;
+      const mx = Math.max(bw / 2 + 2, Math.min(W - bw / 2 - 2, (xa + xb) / 2));
+      const by = Math.abs(xb - xa) < bw ? y - bh - 6 : y - bh / 2;
+      ctx.fillStyle = '#dc2626'; ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(mx - bw / 2, by, bw, bh, 6); else ctx.rect(mx - bw / 2, by, bw, bh);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff'; ctx.fillText(text, mx, by + bh / 2 + 1);
+      ctx.restore();
+    }
+
     function drawRealisticElevationView(ctx, W, H) {
       const w = state.walls[state.activeWallIndex];
       if (!w) return;
       const { segments } = computeWallGeometry();
 
-      const padX = Math.max(24, Math.min(48, W * 0.06));
-      const padTop = 52;
-      const padBottom = 115; // Leave room at bottom for floating HUD
+      const padX = Math.max(34, Math.min(48, W * 0.06));
+      const padTop = 46;
+      const padBottom = 56; // القائمة السفلية بتظهر بس عند اللمس، والرسمة بترتفع تلقائيًا لو غطّت العنصر
       const wallW = Math.max(60, w.length);
       const ceilH = Math.max(180, state.ceilingHeight);
-      const scale = Math.min((W - padX * 2) / wallW, (H - padTop - padBottom) / ceilH);
+      const baseScale = Math.min((W - padX * 2) / wallW, (H - padTop - padBottom) / ceilH);
+      const _Z = window.hzZoom || { z: 1, px: 0, py: 0 };
+      const scale = baseScale * ((window.HZS && window.HZS.zoom) ? _Z.z : 1);
 
       const drawW = wallW * scale;
       const drawCeilH = ceilH * scale;
-      const startX = (W - drawW) / 2;
-      const startY = padTop + Math.max(0, (H - padTop - padBottom - drawCeilH) / 2);
+      const startX = (W - drawW) / 2 + _Z.px;
+      const startY = padTop + Math.max(0, (H - padTop - padBottom - drawCeilH) / 2) + _Z.py;
       const floorY = startY + drawCeilH;
 
-      lastElevationScale = { startX, startY, drawW, drawCeilH, floorY, scale, wallLength: w.length, ceilH };
+      lastElevationScale = { startX, startY, drawW, drawCeilH, floorY, scale, wallLength: w.length, ceilH, baseScale, W, H, padTop, padBottom, wallW };
 
       // 1. Ceiling Line & Wall Title
       ctx.strokeStyle = state.isLightMode ? '#64748b' : '#475569';
@@ -2082,10 +2170,6 @@
 
       ctx.fillStyle = state.isLightMode ? '#0369a1' : '#38bdf8';
       ctx.font = '800 11px Cairo, sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('⬅️ شمال (0)', startX, floorY + 20);
-      ctx.textAlign = 'right';
-      ctx.fillText(`(0) يمين ➡️`, startX + drawW, floorY + 20);
 
       // 2. White Wall Surface
       const actualWallHeightCm = w.isBarWall ? Math.min(ceilH, w.barHeight || 110) : ceilH;
@@ -2421,32 +2505,14 @@
           ctx.setLineDash([]);
 
           const dimY = Math.min(floorY - 14, Math.max(startY + 20, ey + eh / 2));
-          ctx.strokeStyle = '#dc2626';
-          ctx.lineWidth = 2.5;
-          ctx.beginPath();
-          if (el.fromSide === 'left') {
-            ctx.moveTo(startX, dimY);
-            ctx.lineTo(ex, dimY);
-            ctx.stroke();
-            const midX = (startX + ex) / 2;
-            ctx.fillStyle = '#dc2626';
-            ctx.fillRect(midX - 42, dimY - 18, 84, 16);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '800 10px Cairo, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(`⬅️ ${el.dist} سم من الشمال`, midX, dimY - 6);
-          } else {
-            ctx.moveTo(ex + ew, dimY);
-            ctx.lineTo(startX + drawW, dimY);
-            ctx.stroke();
-            const midX = (ex + ew + startX + drawW) / 2;
-            ctx.fillStyle = '#dc2626';
-            ctx.fillRect(midX - 42, dimY - 18, 84, 16);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = '800 10px Cairo, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(`${el.dist} سم من اليمين ➡️`, midX, dimY - 6);
-          }
+          const _both = !window.HZS || window.HZS.bothOffsets !== false;
+          const _lc = Math.round(getElementLeftX(w.length, el));
+          const _rc = Math.round(Math.max(0, w.length - _lc - el.width));
+          const _side = (sd) => {
+            const xa = sd === 'left' ? startX : ex + ew, xb = sd === 'left' ? ex : startX + drawW;
+            hzDimLabel(ctx, xa, xb, dimY, sd === 'left' ? `⬅️ ${_lc} سم من الشمال` : `${_rc} سم من اليمين ➡️`, W);
+          };
+          if (_both) { _side('left'); _side('right'); } else _side(el.fromSide === 'left' ? 'left' : 'right');
         }
       });
     }
@@ -2788,6 +2854,7 @@
         clientName: safeClient,
         ceilingHeight: parseFloat(state.ceilingHeight) || 285,
         wallThickness: parseFloat(state.wallThickness) || 12,
+        notes: (state.notesList || []).map((n) => String(n || '').trim()).filter(Boolean),
         spanBeams: computedSpanBeams,
         floorItems: (state.floorItems || []).map((f) => ({ x: f.x, y: f.y, d: f.d, label: 'بلاعة أرضية' })),
         segments: segments.map((s) => ({
@@ -3124,6 +3191,41 @@ module SiteSurveyRealisticBuilder
       c = Geom::Point3d.new(fi['x'].to_f.cm, -fi['y'].to_f.cm, 0)
       self.add_cyl(ents, c, Geom::Vector3d.new(0, 0, 1), [fi['d'].to_f / 2.0, 2.5].max.cm, 0.4.cm, layers['Survey_Sinks_Plumbing'], dark_screen)
       self.add_label(ents, fi['label'], c, Geom::Vector3d.new(20.cm, 20.cm, 40.cm))
+    end
+
+    # 4. صفحة ملاحظات العميل جنب البلان (نقطة نقطة)
+    notes = (data['notes'] || []).map { |n| n.to_s.strip }.reject(&:empty?)
+    unless notes.empty?
+      begin
+        segs = data['segments'] || []
+        xs = segs.flat_map { |s| [s['x1'].to_f, s['x2'].to_f] }
+        ys = segs.flat_map { |s| [-s['y1'].to_f, -s['y2'].to_f] }
+        x0 = (xs.max || 0) + 120
+        y_top = ys.max || 0
+        gap = 28
+        sheet_w = 240
+        sheet_h = 70 + notes.length * gap
+        ng = ents.add_group
+        ng.name = 'ملاحظات العميل'
+        ne = ng.entities
+        corners = [
+          Geom::Point3d.new(x0.cm, y_top.cm, 0),
+          Geom::Point3d.new((x0 + sheet_w).cm, y_top.cm, 0),
+          Geom::Point3d.new((x0 + sheet_w).cm, (y_top - sheet_h).cm, 0),
+          Geom::Point3d.new(x0.cm, (y_top - sheet_h).cm, 0)
+        ]
+        sheet = ne.add_face(corners)
+        if sheet && sheet.valid?
+          sheet.reverse! if sheet.normal.z < 0
+          sheet.material = [250, 250, 245]
+          sheet.back_material = [250, 250, 245]
+        end
+        ne.add_text('ملاحظات العميل - ' + data['clientName'].to_s, Geom::Point3d.new((x0 + 10).cm, (y_top - 25).cm, 1.cm))
+        notes.each_with_index do |n, i|
+          ne.add_text((i + 1).to_s + ' - ' + n, Geom::Point3d.new((x0 + 10).cm, (y_top - 55 - i * gap).cm, 1.cm))
+        end
+      rescue Exception => e
+      end
     end
 
     if main_grp && main_grp.valid?
@@ -3587,8 +3689,8 @@ end
             mode: 'free',
             x1: Math.round(topBox.originX),
             y1: Math.round(topBox.originY),
-            x2: Math.round(topBox.originX + 20),
-            y2: Math.round(topBox.originY + 20),
+            x2: Math.round(topBox.originX + 1),
+            y2: Math.round(topBox.originY),
             drop: parentSb ? parentSb.drop : 25,
             width: parentSb ? parentSb.width : 15,
             locked: false
@@ -3617,8 +3719,8 @@ end
             mode: 'free',
             x1: Math.round(snappedStart.x),
             y1: Math.round(snappedStart.y),
-            x2: Math.round(snappedStart.x + 15),
-            y2: Math.round(snappedStart.y + 15),
+            x2: Math.round(snappedStart.x + 1),
+            y2: Math.round(snappedStart.y),
             drop: 25,
             width: 15,
             locked: false
@@ -3774,7 +3876,10 @@ end
           const wLen = lastElevationScale.wallLength;
           const el = dragState.el;
           if (el.locked) return;
-          const newLeftCm = Math.max(0, Math.min(wLen - el.width, dragState.origLeftCm + dxCm));
+          const _sn = (window.HZS && window.HZS.snap) || 0;
+          let _nl = dragState.origLeftCm + dxCm;
+          if (_sn > 0) _nl = Math.round(_nl / _sn) * _sn;
+          const newLeftCm = Math.max(0, Math.min(wLen - el.width, _nl));
 
           if (el.fromSide === 'left') el.dist = Math.round(newLeftCm);
           else el.dist = Math.round(Math.max(0, wLen - newLeftCm - el.width));
@@ -3783,7 +3888,9 @@ end
             // مغناطيس: لحد ما تسحب رأسي أكتر من الحد، الارتفاع يفضل ثابت
             if (!dragState.heightUnlocked && Math.abs(dyCm) >= HEIGHT_MAGNET_CM) dragState.heightUnlocked = true;
             if (dragState.heightUnlocked) {
-              el.sill = Math.round(Math.max(0, Math.min(lastElevationScale.ceilH - el.height, dragState.origSill + dyCm)));
+              let _ns = dragState.origSill + dyCm;
+              if (_sn > 0) _ns = Math.round(_ns / _sn) * _sn;
+              el.sill = Math.round(Math.max(0, Math.min(lastElevationScale.ceilH - el.height, _ns)));
             } else {
               el.sill = dragState.origSill;
             }
@@ -3924,6 +4031,16 @@ end
           if (len < 20) {
             state.spanBeams = state.spanBeams.filter((b) => b.id !== d.sb.id);
             state.selectedSpanBeamId = state.spanBeams[0] ? state.spanBeams[0].id : null;
+            if (window.hzToast) window.hzToast('اسحب أكتر من 20 سم عشان يتكوّن الكمر');
+          } else {
+            const _ex = state.spanBeams.find((b) => b.id !== d.sb.id && b.mode === 'free' && (
+              (Math.hypot(b.x1 - d.sb.x1, b.y1 - d.sb.y1) < 8 && Math.hypot(b.x2 - d.sb.x2, b.y2 - d.sb.y2) < 8) ||
+              (Math.hypot(b.x1 - d.sb.x2, b.y1 - d.sb.y2) < 8 && Math.hypot(b.x2 - d.sb.x1, b.y2 - d.sb.y1) < 8)));
+            if (_ex) {
+              state.spanBeams = state.spanBeams.filter((b) => b.id !== d.sb.id);
+              state.selectedSpanBeamId = _ex.id;
+              if (window.hzToast) window.hzToast('فيه كمر في نفس المكان بالفعل — اتحدد بدل ما يتكرر');
+            }
           }
         }
         if (d.isNew && d.mode !== 'freeBeamDrawEnd') setTool(null);
@@ -4300,6 +4417,7 @@ end
       document.getElementById('btnLoadSample').addEventListener('click', () => {
         const sample = getSampleProject();
         state.clientName = 'أحمد محمود - مطبخ السويس';
+        state.notesList = [];
         state.ceilingHeight = 285;
         state.activeWallIndex = 0;
         state.walls = sample.walls;
@@ -4312,6 +4430,7 @@ end
 
       document.getElementById('btnNewProject').addEventListener('click', () => {
         state.clientName = 'عميل جديد';
+        state.notesList = [];
         state.activeWallIndex = 0;
         state.selectedElementId = null;
         state.spanBeams = [];
@@ -4727,7 +4846,7 @@ end
   if(dr){var lo=document.createElement('button');lo.type='button';lo.textContent='🚪 تسجيل خروج';lo.className='px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-rose-500 text-white';lo.onclick=window.hzLogout;dr.appendChild(lo)}
 
   // ---- تراجع / إعادة متعدد الخطوات ----
-  var KEYS=['walls','spanBeams','floorItems','selDrain','ceilingHeight','wallThickness','clientName','roomType','notes'];
+  var KEYS=['walls','spanBeams','floorItems','selDrain','ceilingHeight','wallThickness','clientName','roomType','notes','notesList'];
   var U=[],R=[],cur=null,MAX=100,tm=null;
   function snap(){var o={};KEYS.forEach(function(k){o[k]=state[k]});return JSON.stringify(o)}
   function ui(){$('hzUndo').disabled=!U.length;$('hzRedo').disabled=!R.length;$('hzUn').textContent=U.length;$('hzUn').style.display=U.length?'block':'none'}
@@ -4745,7 +4864,7 @@ end
   $('hzUndo').onclick=function(){commit();if(!U.length)return;R.push(cur);cur=U.pop();restore(cur);ui()};
   $('hzRedo').onclick=function(){if(!R.length)return;U.push(cur);cur=R.pop();restore(cur);ui()};
   ['mouseup','touchend','touchcancel'].forEach(function(n){window.addEventListener(n,function(){later(40)},true)});
-  document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('#hzHistBar'))return;later(80)},true);
+  document.addEventListener('click',function(e){if(e.target.closest&&e.target.closest('#hzHistBar,#hzUndo,#hzRedo'))return;later(80)},true);
   document.addEventListener('change',function(){later(80)},true);
   document.addEventListener('input',function(){later(600)},true);
   window.addEventListener('load',function(){setTimeout(function(){try{cur=snap();ui()}catch(e){}},500)});
@@ -4799,6 +4918,752 @@ end
   var dr=$('topMoreDrawer');
   if(dr){var b=document.createElement('button');b.type='button';b.textContent='🎓 الجولة التعليمية';b.className='px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-amber-500 text-slate-950';b.onclick=function(){dr.classList.add('hidden');window.hzTour(0)};dr.appendChild(b)}
 })();
+</script>
+<script>
+// ===================== HZX EXTENSION LAYER (settings / zoom / loupe / notes / clients / 3D) =====================
+(function () {
+  'use strict';
+  var $ = function (i) { return document.getElementById(i); };
+  function lsg(k, d) { try { var v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } }
+  function lss(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } }
+  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+
+  /* ---------- الإعدادات ---------- */
+  var DEF = { lang: 'ar', zoom: true, magnifier: true, autoHide: true, snap: 0, haptics: true, confirmDel: true,
+    autosave: true, autoSecs: 30, uiSize: 'm', bothOffsets: true, hand: 'off', view3d: 'inapp' };
+  var S = Object.assign({}, DEF, lsg('hz_settings', {}));
+  window.HZS = S;
+  function saveS() { lss('hz_settings', S); }
+  function vib(n) { if (S.haptics && navigator.vibrate) { try { navigator.vibrate(n || 10); } catch (e) {} } }
+  window.hzVib = vib;
+
+  window.hzZoom = { z: 1, px: 0, py: 0 };
+  var Z = window.hzZoom;
+  var hudHidden = true;
+
+  /* ---------- الترجمة (عربي / إنجليزي) ---------- */
+  var DICT = [
+    ['واجهة حائط', 'Wall elevation'], ['واجهة الحائط', 'Wall elevation'], ['واجهة', 'Elevation'], ['مسقط أفقي', 'Plan view'], ['مسقط', 'Plan'],
+    ['إضافة حائط', 'Add wall'], ['حائط', 'Wall'], ['الحيطة', 'wall'], ['حوائط', 'walls'],
+    ['من اليمين', 'from right'], ['من الشمال', 'from left'], ['يمين', 'Right'], ['شمال', 'Left'], ['أعلى', 'Up'], ['أسفل', 'Down'],
+    ['من الأرض', 'from floor'], ['من السقف', 'from ceiling'], ['أرض', 'Floor'], ['المقاس', 'Size'], ['مقاس', 'Size'],
+    ['سم', 'cm'], ['ارتفاع', 'Height'], ['الارتفاع', 'Height'], ['عرض', 'Width'], ['العرض', 'Width'], ['عمق', 'Depth'], ['الطول', 'Length'], ['طول', 'Length'],
+    ['قطر', 'Diameter'], ['القطر', 'Diameter'], ['ماسورة غاز أفقية', 'Horizontal gas pipe'], ['ماسورة غاز رأسية (صاعد)', 'Vertical gas pipe'], ['ماسورة غاز', 'Gas pipe'], ['الماسورة', 'pipe'],
+    ['قصّر', 'Shorten'], ['طوّل', 'Lengthen'], ['التفاف شمال', 'Wrap left'], ['التفاف يمين', 'Wrap right'], ['الحائط السابق', 'previous wall'], ['الحائط التالي', 'next wall'],
+    ['عداد غاز طبيعي', 'Gas meter'], ['عداد / غاز', 'Gas / meter'], ['محبس غاز طبيعي', 'Gas valve'], ['محبس غاز', 'Gas valve'], ['عداد غاز', 'Gas meter'], ['غاز', 'Gas'],
+    ['حوض مطبخ', 'Kitchen sink'], ['صرف حوض', 'Sink drain'], ['خلاط حوض حائط', 'Wall mixer'], ['صرف ومياه', 'Plumbing'], ['صرف', 'Drain'], ['مياه', 'Water'],
+    ['فيشة كهرباء', 'Socket'], ['فيشة', 'Socket'], ['مفتاح نور', 'Light switch'], ['مفتاح', 'Switch'], ['تغذية مياه سخان', 'Heater feed'],
+    ['بواط / وش كهرباء', 'Electric box'], ['عمود بارز', 'Column'], ['عمود', 'Column'], ['كمر بالحائط', 'Wall beam'], ['كمر ساقط', 'Drop beam'], ['كمر', 'Beam'],
+    ['باب', 'Door'], ['شباك', 'Window'], ['فتحة بار', 'Bar opening'], ['بار', 'Bar'], ['بلاعة أرضية', 'Floor drain'],
+    ['الخيارات والأرقام', 'Options & numbers'], ['قفل مكانه', 'Lock position'], ['فتح القفل', 'Unlock'], ['مفتوح للتحريك', 'Unlocked'], ['مفتوح', 'Unlocked'], ['مقفول (محمي)', 'Locked'], ['مقفول', 'Locked'],
+    ['خطوة', 'Step'], ['العناصر', 'Elements'], ['حفظ', 'Save'], ['حذف', 'Delete'], ['إلغاء', 'Cancel'], ['إضافة', 'Add'], ['تعديل', 'Edit'], ['فتح', 'Open'], ['إغلاق', 'Close'],
+    ['الإعدادات', 'Settings'], ['اللغة', 'Language'], ['الثيم', 'Theme'], ['فاتح', 'Light'], ['ليلي', 'Night'], ['الحساب', 'Account'], ['صورة الحساب', 'Profile photo'], ['تسجيل خروج', 'Log out'],
+    ['ملاحظات العميل', 'Client notes'], ['ملاحظات', 'Notes'], ['نقطة', 'point'], ['العملاء', 'Clients'], ['عميل جديد', 'New client'], ['عميل', 'Client'],
+    ['مشروع جديد', 'New project'], ['نسخة احتياطية', 'Backup'], ['استرجاع', 'Restore'], ['تصدير', 'Export'], ['كود', 'Code'],
+    ['تراجع', 'Undo'], ['إعادة', 'Redo'], ['تم الحذف', 'Deleted'], ['تأكيد', 'Confirm'],
+    ['ارتفاع السقف', 'Ceiling height'], ['السقف', 'Ceiling'], ['الاسم', 'Name'], ['اسم', 'Name'],
+    ['قفل الكل', 'Lock all'], ['الجولة التعليمية', 'Tour'], ['مثال', 'Sample'], ['تحميل', 'Load'],
+    ['اضغط على', 'Tap on'], ['اسحب', 'Drag'], ['بإصبعك', 'with your finger'], ['حطه على', 'drop it on'],
+    ['إعدادات', 'Settings'], ['تفعيل', 'Enable'], ['تشغيل', 'On'], ['إيقاف', 'Off'], ['دائمًا', 'Always'],
+    ['عرض بسيط داخل التطبيق', 'Simple in-app view'], ['ملف على الموبايل', 'File on phone'],
+    ['زوم وتحريك', 'Zoom & pan'], ['عدسة مكبرة', 'Magnifier'], ['إخفاء تلقائي للقائمة السفلية', 'Auto-hide bottom bar'],
+    ['اهتزاز عند اللمس', 'Haptics'], ['تأكيد قبل الحذف', 'Confirm before delete'], ['الحفظ التلقائي', 'Auto-save'],
+    ['الانجذاب للشبكة', 'Grid snap'], ['حجم الأزرار والخط', 'Button & font size'], ['وضع اليد الواحدة', 'One-hand mode'],
+    ['المسافات من اليمين والشمال', 'Right & left distances'], ['عرض العميل 3D', 'Client 3D view'],
+    ['صغير', 'Small'], ['متوسط', 'Medium'], ['كبير', 'Large'], ['بدون', 'None'], ['عادي', 'Normal'],
+    ['سقوط', 'Drop'], ['الكمر', 'beam'], ['من', 'from'], ['إلى', 'to']
+  ];
+  DICT.sort(function (a, b) { return b[0].length - a[0].length; });
+  var AR = /[\u0600-\u06FF]/;
+  function tr(s) {
+    if (S.lang !== 'en' || typeof s !== 'string' || !AR.test(s)) return s;
+    for (var i = 0; i < DICT.length; i++) { if (s.indexOf(DICT[i][0]) > -1) s = s.split(DICT[i][0]).join(DICT[i][1]); }
+    return s;
+  }
+  window.hzTr = tr;
+  // canvas text
+  try {
+    var P = CanvasRenderingContext2D.prototype, _ft = P.fillText, _mt = P.measureText, _st = P.strokeText;
+    P.fillText = function (t) { arguments[0] = tr(String(t)); return _ft.apply(this, arguments); };
+    P.strokeText = function (t) { arguments[0] = tr(String(t)); return _st.apply(this, arguments); };
+    P.measureText = function (t) { return _mt.call(this, tr(String(t))); };
+  } catch (e) {}
+  var _al = window.alert, _cf = window.confirm;
+  window.alert = function (m) { return _al.call(window, tr(String(m))); };
+  window.confirm = function (m) { return _cf.call(window, tr(String(m))); };
+  // DOM text
+  var orig = new WeakMap(), busy = false, ATTR = ['title', 'placeholder'];
+  function trNode(n) {
+    if (n.nodeType === 3) {
+      var o = orig.get(n), cur = n.nodeValue;
+      if (S.lang === 'en') {
+        if (o && o.out === cur) return;
+        if (!AR.test(cur)) return;
+        var out = tr(cur); orig.set(n, { src: cur, out: out }); if (out !== cur) n.nodeValue = out;
+      } else if (o && o.out === cur) { n.nodeValue = o.src; orig.delete(n); }
+    } else if (n.nodeType === 1) {
+      if (/^(SCRIPT|STYLE|CANVAS|TEXTAREA)$/.test(n.tagName)) return;
+      ATTR.forEach(function (a) {
+        var v = n.getAttribute(a); if (v == null) return;
+        var key = '_hz_' + a, saved = n[key];
+        if (S.lang === 'en') { if (saved && saved.out === v) return; if (!AR.test(v)) return; var o2 = tr(v); n[key] = { src: v, out: o2 }; n.setAttribute(a, o2); }
+        else if (saved && saved.out === v) { n.setAttribute(a, saved.src); n[key] = null; }
+      });
+      for (var c = n.firstChild; c; c = c.nextSibling) trNode(c);
+    }
+  }
+  var mo = new MutationObserver(function (ms) {
+    if (busy) return; busy = true;
+    try {
+      ms.forEach(function (m) {
+        if (m.type === 'characterData') trNode(m.target);
+        else if (m.type === 'attributes') trNode(m.target);
+        else m.addedNodes.forEach(trNode);
+      });
+    } finally { busy = false; }
+  });
+  function applyLang() {
+    var en = S.lang === 'en';
+    document.documentElement.lang = en ? 'en' : 'ar';
+    document.documentElement.dir = en ? 'ltr' : 'rtl';
+    busy = true; try { trNode(document.body); } finally { busy = false; }
+    try { renderCanvas(); } catch (e) {}
+  }
+  mo.observe(document.body, { subtree: true, childList: true, characterData: true, attributes: true, attributeFilter: ATTR });
+
+  /* ---------- توست ---------- */
+  var toastEl = document.createElement('div'); toastEl.id = 'hzToast'; document.body.appendChild(toastEl);
+  var toastTm = null;
+  window.hzToast = function (msg, actionLabel, action) {
+    toastEl.innerHTML = '';
+    var sp = document.createElement('span'); sp.textContent = msg; toastEl.appendChild(sp);
+    if (actionLabel) { var b = document.createElement('button'); b.type = 'button'; b.textContent = actionLabel; b.onclick = function () { toastEl.style.display = 'none'; action && action(); }; toastEl.appendChild(b); }
+    toastEl.style.display = 'flex'; clearTimeout(toastTm); toastTm = setTimeout(function () { toastEl.style.display = 'none'; }, actionLabel ? 6000 : 2600);
+  };
+
+  /* ---------- الشريط العلوي في سطر واحد ---------- */
+  var header = document.querySelector('header');
+  var rows = header.children;
+  var row1 = rows[0], row2 = rows[1];
+  var proj = row1.children[0], rightActions = row1.children[1];
+  var tabs = $('wallTabsContainer'), addWall = $('btnAddWall'), moreBtn = $('btnToggleMoreMenu');
+  var drawer = $('topMoreDrawer');
+  var rowEl = document.createElement('div'); rowEl.id = 'hzRow';
+  proj.id = 'hzProj';
+  proj.className = 'flex items-center gap-0.5 bg-slate-950/30 p-0.5 rounded-xl border border-slate-700/40';
+  var bE = $('btnViewElevation'), bP = $('btnViewPlan');
+  bE.innerHTML = '🧱 <span>واجهة</span>'; bP.innerHTML = '📐 <span>مسقط</span>';
+  [bE, bP].forEach(function (b) { b.removeAttribute('title'); });
+  var restyle = function () { [bE, bP].forEach(function (b) { b.classList.remove('px-2.5'); b.classList.add('px-2'); }); };
+  restyle();
+  rowEl.appendChild(proj); rowEl.appendChild(tabs);
+  tabs.className = 'flex items-center gap-1 overflow-x-auto custom-scroll py-0.5';
+  addWall.textContent = '＋'; addWall.title = 'إضافة حائط';
+  addWall.className = 'w-8 h-8 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-base font-black shadow transition';
+  rowEl.appendChild(addWall);
+  // أزرار جديدة: ملاحظات / 3D / إعدادات
+  function icBtn(id, html, title) { var b = document.createElement('button'); b.type = 'button'; b.id = id; b.className = 'hzIc'; b.innerHTML = html; b.title = title; return b; }
+  var notesBtn = icBtn('hzNotesBtn', '📝<small id="hzNotesN" style="display:none">0</small>', 'ملاحظات العميل');
+  var v3Btn = icBtn('hz3DBtn', '🧊', 'عرض العميل 3D');
+  var setBtn = icBtn('hzSetBtn', '⚙️', 'الإعدادات');
+  rowEl.appendChild(notesBtn); rowEl.appendChild(v3Btn); rowEl.appendChild(setBtn);
+  moreBtn.className = 'hzIc'; moreBtn.textContent = '☰';
+  rowEl.appendChild(moreBtn);
+  // باقي الأزرار القديمة تنتقل لأول القائمة المنبثقة
+  var dRow = document.createElement('div'); dRow.id = 'hzDrawerRow';
+  rightActions.removeChild(moreBtn);
+  rightActions.className = 'flex items-center gap-1.5 flex-wrap';
+  dRow.appendChild(rightActions);
+  var clientsBtn = document.createElement('button'); clientsBtn.type = 'button'; clientsBtn.id = 'hzClientsBtn';
+  clientsBtn.className = 'px-2.5 py-1.5 rounded-xl theme-sub border text-[11px] font-extrabold whitespace-nowrap'; clientsBtn.textContent = '👥 العملاء والحفظ';
+  dRow.appendChild(clientsBtn);
+  drawer.insertBefore(dRow, drawer.firstChild);
+  header.insertBefore(rowEl, row1);
+  row1.style.display = 'none'; row2.style.display = 'none';
+  var cb = $('closureBadge'); if (cb) { row2.appendChild(cb); }
+
+  /* ---------- لوحة الإعدادات ---------- */
+  var panel = document.createElement('div'); panel.id = 'hzSettings'; document.body.appendChild(panel);
+  function sess() { try { return JSON.parse(localStorage.getItem('hz_sess') || '{}'); } catch (e) { return {}; } }
+  function avatarSet() {
+    var a = lsg('hz_avatar', ''); setBtn.innerHTML = a ? '<img src="' + a + '" alt="">' : '⚙️';
+  }
+  function applyBody() {
+    var c = document.body.classList;
+    c.remove('ui-s', 'ui-l', 'hand-left', 'hand-right');
+    if (S.uiSize === 's') c.add('ui-s'); if (S.uiSize === 'l') c.add('ui-l');
+    if (S.hand === 'left') c.add('hand-left'); if (S.hand === 'right') c.add('hand-right');
+    v3Btn.style.display = S.view3d === 'off' ? 'none' : '';
+    zoomBar.style.display = (S.zoom && state.previewMode === 'elevation') ? 'flex' : 'none';
+    if (!S.zoom) { Z.z = 1; Z.px = 0; Z.py = 0; }
+    try { renderCanvas(); } catch (e) {}
+  }
+  function renderPanel() {
+    var a = lsg('hz_avatar', ''), u = sess().u || '';
+    var h = '<div class="acc"><div class="av" id="hzAv">' + (a ? '<img src="' + a + '">' : '👤') + '</div><div style="flex:1"><div style="font-weight:900">' + (u || 'الحساب') + '</div>' +
+      '<div style="display:flex;gap:6px;margin-top:5px;flex-wrap:wrap"><button class="btn sec" id="hzAvPick" type="button">📷 صورة الحساب</button>' +
+      (a ? '<button class="btn sec" id="hzAvDel" type="button">حذف الصورة</button>' : '') + '<button class="btn red" id="hzOut" type="button">تسجيل خروج</button></div></div></div>' +
+      '<input type="file" id="hzAvFile" accept="image/*" style="display:none">';
+    h += '<h4>اللغة والثيم</h4>';
+    h += seg('lang', 'اللغة', [['ar', 'عربي'], ['en', 'English']]);
+    h += seg('theme', 'الثيم', [['light', '☀️ فاتح'], ['dark', '🌙 ليلي']]);
+    h += '<h4>الرسم والتحكم</h4>';
+    h += sw('zoom', 'زوم وتحريك داخل الحائط') + sw('magnifier', 'عدسة مكبرة أثناء السحب') + sw('autoHide', 'إخفاء تلقائي للقائمة السفلية') +
+      sw('bothOffsets', 'المسافات من اليمين والشمال عند اللمس') + sel('snap', 'الانجذاب للشبكة', [[0, 'بدون'], [1, '1 سم'], [5, '5 سم'], [10, '10 سم']]) +
+      sw('haptics', 'اهتزاز عند اللمس') + sw('confirmDel', 'تأكيد قبل الحذف');
+    h += '<h4>الشاشة</h4>';
+    h += sel('uiSize', 'حجم الأزرار والخط', [['s', 'صغير'], ['m', 'متوسط'], ['l', 'كبير']]) + sel('hand', 'وضع اليد الواحدة', [['off', 'عادي'], ['right', 'يمين'], ['left', 'شمال']]);
+    h += '<h4>الحفظ والعرض</h4>';
+    h += sw('autosave', 'الحفظ التلقائي على الموبايل') + sel('autoSecs', 'كل كام ثانية', [[15, '15'], [30, '30'], [60, '60']]) +
+      sel('view3d', 'عرض العميل 3D', [['inapp', 'عرض بسيط داخل التطبيق'], ['file', 'ملف على الموبايل'], ['off', 'إيقاف']]);
+    h += '<div style="margin-top:10px;display:flex;justify-content:flex-end"><button class="btn" id="hzSetClose" type="button">إغلاق</button></div>';
+    panel.innerHTML = h;
+    function seg(k, label, opts) { return '<div class="row"><span>' + label + '</span><div class="seg" data-k="' + k + '">' + opts.map(function (o) { return '<button type="button" data-v="' + o[0] + '" class="' + (isOn(k, o[0]) ? 'on' : '') + '">' + o[1] + '</button>'; }).join('') + '</div></div>'; }
+    function sw(k, label) { return '<div class="row"><span>' + label + '</span><button type="button" class="sw ' + (S[k] ? 'on' : '') + '" data-sw="' + k + '"></button></div>'; }
+    function sel(k, label, opts) { return '<div class="row"><span>' + label + '</span><select data-sel="' + k + '">' + opts.map(function (o) { return '<option value="' + o[0] + '"' + (String(S[k]) === String(o[0]) ? ' selected' : '') + '>' + o[1] + '</option>'; }).join('') + '</select></div>'; }
+    function isOn(k, v) { return k === 'theme' ? ((state.isLightMode ? 'light' : 'dark') === v) : S[k] === v; }
+    panel.querySelectorAll('.seg button').forEach(function (b) {
+      b.onclick = function () {
+        var k = b.parentNode.getAttribute('data-k'), v = b.getAttribute('data-v');
+        if (k === 'theme') { if ((v === 'light') !== state.isLightMode) $('btnToggleTheme').click(); }
+        else { S[k] = v; saveS(); if (k === 'lang') applyLang(); }
+        renderPanel();
+      };
+    });
+    panel.querySelectorAll('[data-sw]').forEach(function (b) { b.onclick = function () { var k = b.getAttribute('data-sw'); S[k] = !S[k]; saveS(); applyBody(); renderPanel(); if (k === 'autosave') startAuto(); }; });
+    panel.querySelectorAll('[data-sel]').forEach(function (s) {
+      s.onchange = function () { var k = s.getAttribute('data-sel'), v = s.value; S[k] = /^\d+$/.test(v) ? +v : v; saveS(); applyBody(); if (k === 'autoSecs') startAuto(); };
+    });
+    $('hzSetClose').onclick = function () { panel.style.display = 'none'; };
+    $('hzAvPick').onclick = function () { $('hzAvFile').click(); };
+    $('hzAvFile').onchange = function () {
+      var f = this.files && this.files[0]; if (!f) return;
+      var r = new FileReader();
+      r.onload = function () {
+        var im = new Image();
+        im.onload = function () {
+          var c = document.createElement('canvas'); c.width = c.height = 128; var x = c.getContext('2d');
+          var m = Math.min(im.width, im.height); x.drawImage(im, (im.width - m) / 2, (im.height - m) / 2, m, m, 0, 0, 128, 128);
+          lss('hz_avatar', c.toDataURL('image/jpeg', .8)); avatarSet(); renderPanel();
+        };
+        im.src = r.result;
+      };
+      r.readAsDataURL(f);
+    };
+    var del = $('hzAvDel'); if (del) del.onclick = function () { try { localStorage.removeItem('hz_avatar'); } catch (e) {} avatarSet(); renderPanel(); };
+    $('hzOut').onclick = function () { if (window.hzLogout) window.hzLogout(); };
+    if (S.lang === 'en') { busy = true; try { trNode(panel); } finally { busy = false; } }
+  }
+  setBtn.onclick = function () {
+    if (panel.style.display === 'block') { panel.style.display = 'none'; return; }
+    renderPanel(); panel.style.display = 'block';
+  };
+  document.addEventListener('pointerdown', function (e) {
+    if (panel.style.display === 'block' && !panel.contains(e.target) && !setBtn.contains(e.target)) panel.style.display = 'none';
+  }, true);
+  avatarSet();
+
+  /* ---------- القائمة السفلية: تراجع/إعادة جوّاها + إخفاء تلقائي + صفوف الماسورة ---------- */
+  var cv = $('previewCanvas'), holder = cv.parentElement;
+  var delBtn = $('btnHudQuickDelete');
+  if (delBtn && $('hzUndo') && $('hzRedo')) {
+    delBtn.parentNode.insertBefore($('hzUndo'), delBtn);
+    delBtn.parentNode.insertBefore($('hzRedo'), delBtn);
+  }
+  // صف قطر الماسورة
+  var diaRow = document.createElement('div');
+  diaRow.id = 'hzGasDiaRow'; diaRow.className = 'hzDia pb-1'; diaRow.style.display = 'none';
+  diaRow.innerHTML = '<span>⭕ قطر الماسورة: <b id="hzDiaVal">5</b> سم</span>' +
+    '<button type="button" class="px-2 py-1 rounded-lg border theme-sub text-[10px] font-extrabold" id="hzDiaM">➖ قطر</button>' +
+    '<button type="button" class="px-2 py-1 rounded-lg border theme-sub text-[10px] font-extrabold" id="hzDiaP">➕ قطر</button>';
+  $('hudGasLenRow').parentNode.insertBefore(diaRow, $('hudGasLenRow'));
+  function dia(sg) {
+    var el = getSelectedElement(); if (!el || el.locked) return;
+    var k = gasKind(el);
+    if (k === 'hpipe') el.height = Math.max(1, +(el.height + sg).toFixed(1));
+    else if (k === 'vpipe') el.width = Math.max(1, +(el.width + sg).toFixed(1));
+    syncUI();
+  }
+  $('hzDiaM').onclick = function () { dia(-1); };
+  $('hzDiaP').onclick = function () { dia(1); };
+  // صف توصيل طرف الكمر بحائط (المسقط الأفقي)
+  var attachRow = document.createElement('div'); attachRow.id = 'hzBeamAttach'; attachRow.style.display = 'none';
+  $('hudNudgeControlsRow').parentNode.insertBefore(attachRow, $('hudNudgeControlsRow'));
+  function attach(sb, which, idx) {
+    var sg = computeWallGeometry().segments[idx]; if (!sg || sb.locked) return;
+    var px = which === 'start' ? sb.x1 : sb.x2, py = which === 'start' ? sb.y1 : sb.y2;
+    var c = closestPointOnSegment(px, py, sg.x1, sg.y1, sg.x2, sg.y2);
+    if (which === 'start') { sb.x1 = Math.round(c.x); sb.y1 = Math.round(c.y); } else { sb.x2 = Math.round(c.x); sb.y2 = Math.round(c.y); }
+    vib(15); hzToast('🔗 تم توصيل ' + (which === 'start' ? 'بداية' : 'نهاية') + ' الكمر بحائط #' + (idx + 1)); syncUI();
+  }
+  function buildAttach(sb) {
+    var n = state.walls.length, opts = '<option value="">— اختر حائط —</option>';
+    for (var i = 0; i < n; i++) opts += '<option value="' + i + '">حائط #' + (i + 1) + '</option>';
+    attachRow.innerHTML = '<span>🔗 وصّل الكمر بحائط:</span><label>البداية <select id="hzAtS">' + opts + '</select></label><label>النهاية <select id="hzAtE">' + opts + '</select></label>';
+    $('hzAtS').onchange = function () { if (this.value !== '') attach(sb, 'start', +this.value); };
+    $('hzAtE').onchange = function () { if (this.value !== '') attach(sb, 'end', +this.value); };
+  }
+  var attachKey = '';
+
+  var lastDia = null;
+  var _rh = renderFloatingHUD;
+  renderFloatingHUD = function () {
+    _rh.apply(this, arguments);
+    var hud = $('floatingSelectionHUD'); if (!hud) return;
+    if (S.autoHide && hudHidden) hud.classList.add('hidden');
+    var vis = !hud.classList.contains('hidden');
+    var el = state.activeSelectionKind === 'element' ? getSelectedElement() : null;
+    var gk = el ? gasKind(el) : null, pipe = gk === 'hpipe' || gk === 'vpipe';
+    $('hudGasLenRow').style.display = (vis && pipe) ? '' : 'none';
+    $('hudGasWrapRow').style.display = (vis && gk === 'hpipe') ? '' : 'none';
+    diaRow.style.display = (vis && pipe) ? 'flex' : 'none';
+    if (vis && pipe) $('hzDiaVal').textContent = gk === 'hpipe' ? el.height : el.width;
+    var sb = getActiveSpanBeam();
+    var beamHud = vis && sb && sb.mode === 'free' && $('hudItemTitle').textContent.indexOf('🌉') === 0;
+    if (beamHud) { var k = state.spanBeams.length + '|' + state.walls.length + '|' + sb.id; if (k !== attachKey) { attachKey = k; buildAttach(sb); } attachRow.style.display = 'flex'; }
+    else attachRow.style.display = 'none';
+    updNav();
+  };
+
+  // أي عنصر جديد يظهر معاه القائمة
+  var _ce2 = createEl;
+  createEl = function () { hudHidden = false; return _ce2.apply(this, arguments); };
+  if (typeof window.gasWrap === 'function') { var _gw = window.gasWrap; window.gasWrap = function () { hudHidden = false; return _gw.apply(this, arguments); }; }
+
+  // تأكيد الحذف + زر تراجع بعد الحذف
+  ['btnHudQuickDelete', 'btnDeleteSelectedElement'].forEach(function (id) {
+    var b = $(id); if (!b) return;
+    b.addEventListener('click', function (e) {
+      if (S.confirmDel && !window.confirm('تأكيد حذف العنصر؟')) { e.stopImmediatePropagation(); e.preventDefault(); return; }
+      vib(20);
+      setTimeout(function () { var u = $('hzUndo'); if (u && !u.disabled) hzToast('تم الحذف', '↶ تراجع', function () { u.click(); }); }, 450);
+    }, true);
+  });
+
+  /* ---------- زرّا الانتقال بين الحيطان ---------- */
+  var navL = document.createElement('button'), navR = document.createElement('button');
+  navL.id = 'hzNavL'; navR.id = 'hzNavR'; navL.className = navR.className = 'hzNav'; navL.type = navR.type = 'button';
+  navL.innerHTML = '‹<small id="hzNavLn"></small>'; navR.innerHTML = '›<small id="hzNavRn"></small>';
+  navL.title = 'الحائط السابق (شمال)'; navR.title = 'الحائط التالي (يمين)';
+  holder.appendChild(navL); holder.appendChild(navR);
+  function goWall(dir) {
+    var n = state.walls.length; if (n < 2) return;
+    hudHidden = true; Z.z = 1; Z.px = 0; Z.py = 0; vib(8);
+    state.activeWallIndex = (state.activeWallIndex + dir + n) % n;
+    state.selectedElementId = null; state.activeSelectionKind = 'element';
+    syncUI();
+  }
+  navL.onclick = function () { goWall(-1); }; navR.onclick = function () { goWall(1); };
+  function updNav() {
+    var n = state.walls.length, show = state.previewMode === 'elevation' && n > 1;
+    navL.style.display = navR.style.display = show ? 'flex' : 'none';
+    if (show) { $('hzNavLn').textContent = ((state.activeWallIndex + n - 1) % n) + 1; $('hzNavRn').textContent = ((state.activeWallIndex + 1) % n) + 1; }
+    zoomBar.style.display = (S.zoom && state.previewMode === 'elevation') ? 'flex' : 'none';
+    updZoomUI();
+  }
+  $('wallTabsContainer').addEventListener('click', function () { hudHidden = true; Z.z = 1; Z.px = 0; Z.py = 0; }, true);
+
+  /* ---------- زوم وتحريك ---------- */
+  var zoomBar = document.createElement('div'); zoomBar.id = 'hzZoomBar';
+  zoomBar.innerHTML = '<button type="button" id="hzZP" title="تكبير">＋</button><button type="button" id="hzZM" title="تصغير">－</button><button type="button" id="hzZR">⟲ الحجم الطبيعي</button>';
+  holder.appendChild(zoomBar);
+  function layoutAt(z) {
+    var s = lastElevationScale; if (!s) return null;
+    var sc = s.baseScale * z;
+    return { sc: sc, x0: (s.W - s.wallW * sc) / 2, y0: s.padTop + Math.max(0, (s.H - s.padTop - s.padBottom - s.ceilH * sc) / 2) };
+  }
+  function clampPan(z) {
+    var s = lastElevationScale, l = layoutAt(z); if (!l) return;
+    var dw = s.wallW * l.sc, dh = s.ceilH * l.sc;
+    var sx = clamp(l.x0 + Z.px, s.W * 0.25 - dw, s.W * 0.75), sy = clamp(l.y0 + Z.py, s.H * 0.25 - dh, s.H * 0.75);
+    Z.px = sx - l.x0; Z.py = sy - l.y0;
+  }
+  function updZoomUI() { var r = $('hzZR'); if (r) r.style.display = (Z.z > 1.02 || Math.abs(Z.px) > 2 || Math.abs(Z.py) > 2) ? 'block' : 'none'; }
+  function setViewAnchored(z, mx, my, u, v) {
+    z = clamp(z, 1, 6);
+    var l = layoutAt(z); if (!l) return;
+    Z.z = z; Z.px = mx - u * l.sc - l.x0; Z.py = my - v * l.sc - l.y0;
+    if (z <= 1.02) { Z.z = 1; Z.px = 0; Z.py = 0; } else clampPan(z);
+    renderCanvas(); updZoomUI();
+  }
+  function zoomCenter(f) {
+    var s = lastElevationScale; if (!s) return;
+    var mx = s.W / 2, my = s.H / 2;
+    setViewAnchored(Z.z * f, mx, my, (mx - s.startX) / s.scale, (my - s.startY) / s.scale);
+  }
+  $('hzZP').onclick = function () { zoomCenter(1.35); }; $('hzZM').onclick = function () { zoomCenter(1 / 1.35); };
+  $('hzZR').onclick = function () { Z.z = 1; Z.px = 0; Z.py = 0; vib(10); renderCanvas(); updZoomUI(); };
+  window.hzLiftSel = liftSel;
+  function liftSel() {
+    if (state.previewMode !== 'elevation' || !lastElevationScale || !state.selectedElementId) return;
+    var hud = $('floatingSelectionHUD'); if (!hud || hud.classList.contains('hidden')) return;
+    var id = state.selectedElementId, box = null;
+    for (var i = 0; i < canvasHitBoxes.length; i++) { var b = canvasHitBoxes[i]; if (b.kind === 'wallElement' && b.elementId === id) { box = b; break; } }
+    if (!box) return;
+    var limit = lastElevationScale.H - hud.offsetHeight - 14, bottom = box.y + box.h - 6;
+    if (bottom > limit) { Z.py -= (bottom - limit); clampPan(Z.z); renderCanvas(); updZoomUI(); }
+  }
+
+  /* ---------- لمس: تحديد / بنش / سحب الخلفية / لمس الفاضي يخفي القائمة ---------- */
+  function hitAny(cx, cy) {
+    for (var i = 0; i < canvasHitBoxes.length; i++) { var b = canvasHitBoxes[i]; if (cx >= b.x && cx <= b.x + b.w && cy >= b.y && cy <= b.y + b.h) return b; }
+    return null;
+  }
+  function pt(e) {
+    var r = cv.getBoundingClientRect(), t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e;
+    return { cx: (t.clientX - r.left) * (cv.width / r.width), cy: (t.clientY - r.top) * (cv.height / r.height), x: t.clientX, y: t.clientY };
+  }
+  var cand = null, pinch = null;
+  function onDown(e) {
+    if (e.touches && e.touches.length >= 2) {
+      if (S.zoom && state.previewMode === 'elevation' && lastElevationScale) {
+        e.stopImmediatePropagation(); dragState = null; dragCursor = null; cand = null;
+        var r = cv.getBoundingClientRect(), t = e.touches, s = lastElevationScale;
+        var mx = (t[0].clientX + t[1].clientX) / 2 - r.left, my = (t[0].clientY + t[1].clientY) / 2 - r.top;
+        pinch = { d: Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY), z: Z.z, u: (mx - s.startX) / s.scale, v: (my - s.startY) / s.scale };
+        renderCanvas();
+      }
+      return;
+    }
+    var p = pt(e), box = hitAny(p.cx, p.cy);
+    if (box) { hudHidden = false; vib(8); cand = { sel: true, x: p.x, y: p.y, t: Date.now(), moved: false }; return; }
+    if (state.tool) { cand = null; return; }
+    cand = { sel: false, x: p.x, y: p.y, t: Date.now(), moved: false, px: Z.px, py: Z.py, pan: !!(S.zoom && Z.z > 1.02 && state.previewMode === 'elevation') };
+  }
+  function onMove(e) {
+    if (pinch && e.touches && e.touches.length >= 2) {
+      var t = e.touches, r = cv.getBoundingClientRect();
+      var mx = (t[0].clientX + t[1].clientX) / 2 - r.left, my = (t[0].clientY + t[1].clientY) / 2 - r.top;
+      var d = Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+      setViewAnchored(pinch.z * d / pinch.d, mx, my, pinch.u, pinch.v);
+      return;
+    }
+    if (!cand) return;
+    var p = pt(e);
+    if (Math.hypot(p.x - cand.x, p.y - cand.y) > 8) cand.moved = true;
+    if (cand.pan && cand.moved && !dragState) {
+      Z.px = cand.px + (p.x - cand.x); Z.py = cand.py + (p.y - cand.y); clampPan(Z.z); renderCanvas(); updZoomUI();
+    }
+  }
+  function onUp(e) {
+    if (pinch && (!e.touches || e.touches.length < 2)) {
+      pinch = null; cand = null;
+      if (Z.z <= 1.02) { Z.z = 1; Z.px = 0; Z.py = 0; renderCanvas(); }
+      updZoomUI(); return;
+    }
+    if (!cand) return;
+    var c = cand; cand = null;
+    if (c.sel) { setTimeout(liftSel, 40); return; }
+    if (c.moved || Date.now() - c.t > 600 || state.tool) return;
+    if (!S.autoHide) return;
+    hudHidden = true;
+    if (state.previewMode === 'elevation') {
+      state.selectedElementId = null; state.activeSelectionKind = 'element';
+      if (Z.z === 1) Z.py = 0;
+    }
+    syncUI();
+  }
+  cv.addEventListener('touchstart', onDown, { capture: true, passive: true });
+  cv.addEventListener('mousedown', onDown, true);
+  window.addEventListener('touchmove', onMove, { passive: true });
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('touchend', onUp);
+  window.addEventListener('touchcancel', function () { pinch = null; cand = null; });
+  window.addEventListener('mouseup', onUp);
+  cv.addEventListener('wheel', function (e) {
+    if (!S.zoom || state.previewMode !== 'elevation' || !lastElevationScale) return;
+    e.preventDefault();
+    var r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top, s = lastElevationScale;
+    setViewAnchored(Z.z * (e.deltaY < 0 ? 1.15 : 1 / 1.15), mx, my, (mx - s.startX) / s.scale, (my - s.startY) / s.scale);
+  }, { passive: false });
+
+  /* ---------- العدسة المكبرة أثناء السحب ---------- */
+  var lp = document.createElement('canvas'); lp.id = 'hzLoupe'; lp.width = lp.height = 224; holder.appendChild(lp);
+  function loupe() {
+    if (!(S.magnifier && dragState && dragCursor)) { lp.style.display = 'none'; return; }
+    var W = cv.width, H = cv.height, x = dragCursor.cx, y = dragCursor.cy, R = 112, k = 2.2;
+    var lx = clamp(x > W / 2 ? x - R - 34 : x + 34, 4, Math.max(4, W - R - 4));
+    var ly = clamp(y - R - 36, 48, Math.max(48, H - R - 4));
+    lp.style.left = lx + 'px'; lp.style.top = ly + 'px'; lp.style.display = 'block';
+    var c = lp.getContext('2d'), src = R / k;
+    c.save(); c.clearRect(0, 0, 224, 224); c.beginPath(); c.arc(112, 112, 112, 0, 7); c.clip();
+    c.fillStyle = '#fff'; c.fillRect(0, 0, 224, 224);
+    try { c.drawImage(cv, x - src / 2, y - src / 2, src, src, 0, 0, 224, 224); } catch (e) {}
+    c.strokeStyle = 'rgba(220,38,38,.9)'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(112, 92); c.lineTo(112, 132); c.moveTo(92, 112); c.lineTo(132, 112); c.stroke();
+    c.restore();
+  }
+  var _rc2 = renderCanvas;
+  renderCanvas = function () { _rc2.apply(this, arguments); try { loupe(); } catch (e) {} };
+
+  /* ---------- ملاحظات العميل (نقطة نقطة) ---------- */
+  if (!Array.isArray(state.notesList)) state.notesList = [];
+  function modal(id, title) {
+    var m = document.createElement('div'); m.className = 'hzModal'; m.id = id;
+    m.innerHTML = '<div class="card"><h3><span>' + title + '</span><button class="btn sec" type="button" data-x="1">✕</button></h3><div class="body" style="display:flex;flex-direction:column;min-height:0;flex:1"></div></div>';
+    m.addEventListener('pointerdown', function (e) { if (e.target === m) m.style.display = 'none'; });
+    m.querySelector('[data-x]').onclick = function () { m.style.display = 'none'; };
+    document.body.appendChild(m); return m;
+  }
+  function commitHist() { try { document.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {} }
+  var nm = modal('hzNotes', '📝 ملاحظات العميل'), nb = nm.querySelector('.body');
+  function updNotesBadge() {
+    var b = $('hzNotesN'), n = (state.notesList || []).filter(Boolean).length;
+    if (b) { b.textContent = n; b.style.display = n ? 'block' : 'none'; }
+  }
+  function renderNotes() {
+    var L = state.notesList;
+    nb.innerHTML = '<div class="item"><input type="text" id="hzNoteIn" placeholder="اكتب نقطة وبعدين اضغط إضافة"><button class="btn" type="button" id="hzNoteAdd">＋ إضافة</button></div><div class="list" id="hzNoteList"></div>' +
+      '<div class="empty" style="display:' + (L.length ? 'none' : 'block') + '">مفيش نقاط لسه — كل نقطة هتظهر في سكتش اب جنب البلان</div>';
+    var list = $('hzNoteList');
+    L.forEach(function (t, i) {
+      var row = document.createElement('div'); row.className = 'item';
+      row.innerHTML = '<span style="font-weight:900;color:#f59e0b">' + (i + 1) + '.</span>';
+      var inp = document.createElement('input'); inp.type = 'text'; inp.value = t;
+      inp.onchange = function () { state.notesList[i] = inp.value.trim(); updNotesBadge(); commitHist(); };
+      var d = document.createElement('button'); d.type = 'button'; d.className = 'btn red'; d.textContent = '🗑';
+      d.onclick = function () { state.notesList.splice(i, 1); renderNotes(); updNotesBadge(); commitHist(); };
+      row.appendChild(inp); row.appendChild(d); list.appendChild(row);
+    });
+    function add() { var v = $('hzNoteIn').value.trim(); if (!v) return; state.notesList.push(v); renderNotes(); updNotesBadge(); commitHist(); setTimeout(function () { $('hzNoteIn').focus(); }, 30); }
+    $('hzNoteAdd').onclick = add;
+    $('hzNoteIn').onkeydown = function (e) { if (e.key === 'Enter') { e.preventDefault(); add(); } };
+    if (S.lang === 'en') { busy = true; try { trNode(nb); } finally { busy = false; } }
+  }
+  notesBtn.onclick = function () { renderNotes(); nm.style.display = 'flex'; setTimeout(function () { var i = $('hzNoteIn'); i && i.focus(); }, 80); };
+  var _su0 = syncUI;
+  syncUI = function () { var r = _su0.apply(this, arguments); updNotesBadge(); return r; };
+
+  /* ---------- حفظ البلان محليًا + قائمة العملاء + نسخة احتياطية + حفظ تلقائي ---------- */
+  var KEYS = ['walls', 'spanBeams', 'floorItems', 'selDrain', 'ceilingHeight', 'wallThickness', 'clientName', 'roomType', 'notes', 'notesList'];
+  function snapData() { var o = {}; KEYS.forEach(function (k) { o[k] = state[k]; }); return JSON.parse(JSON.stringify(o)); }
+  function loadData(o) {
+    KEYS.forEach(function (k) { if (o[k] !== undefined) state[k] = o[k]; });
+    if (!Array.isArray(state.notesList)) state.notesList = [];
+    state.activeWallIndex = 0; state.selectedElementId = null; state.activeSelectionKind = 'element';
+    state.selectedSpanBeamId = state.spanBeams[0] ? state.spanBeams[0].id : null;
+    hudHidden = true; Z.z = 1; Z.px = 0; Z.py = 0;
+    syncUI();
+  }
+  function clients() { return lsg('hz_clients', []); }
+  function putClients(a) { return lss('hz_clients', a); }
+  var curId = lsg('hz_cur_id', null);
+  function fmt(t) { try { return new Date(t).toLocaleString(S.lang === 'en' ? 'en-GB' : 'ar-EG', { dateStyle: 'short', timeStyle: 'short' }); } catch (e) { return ''; } }
+  function saveClient() {
+    var a = clients(), now = Date.now(), data = snapData(), name = state.clientName || 'عميل';
+    var rec = a.filter(function (c) { return c.id === curId; })[0];
+    if (rec) { rec.name = name; rec.ts = now; rec.data = data; }
+    else { curId = 'c' + now; lss('hz_cur_id', curId); a.unshift({ id: curId, name: name, ts: now, data: data }); }
+    if (!putClients(a)) { hzToast('⚠️ مساحة التخزين ممتلئة — اعمل نسخة احتياطية'); return; }
+    return name;
+  }
+  function download(name, text, mime) {
+    var blob = new Blob([text], { type: mime || 'application/json' });
+    var f = null; try { f = new File([blob], name, { type: blob.type }); } catch (e) {}
+    if (f && navigator.canShare && navigator.canShare({ files: [f] }) && navigator.share) {
+      navigator.share({ files: [f], title: name }).catch(function () { raw(); }); return;
+    }
+    raw();
+    function raw() { var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1500); }
+  }
+  function backupAll() {
+    var pack = { app: 'dola-survey', v: 2, ts: Date.now(), clients: clients(), draft: lsg('hz_draft', null) };
+    var d = new Date(), n = 'backup-' + d.getFullYear() + String(d.getMonth() + 1).padStart(2, '0') + String(d.getDate()).padStart(2, '0') + '.json';
+    download(n, JSON.stringify(pack)); hzToast('📤 جاري تصدير النسخة الاحتياطية');
+  }
+  var cm = modal('hzClients', '👥 العملاء والحفظ'), cbody = cm.querySelector('.body');
+  var restoreIn = document.createElement('input'); restoreIn.type = 'file'; restoreIn.accept = '.json,application/json'; restoreIn.style.display = 'none'; document.body.appendChild(restoreIn);
+  restoreIn.onchange = function () {
+    var f = this.files && this.files[0]; this.value = ''; if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var p = JSON.parse(r.result), a = clients(), n = 0;
+        var inc = p.clients || (p.data ? [p] : []);
+        inc.forEach(function (c) {
+          if (!c || !c.data) return; var i = -1;
+          a.forEach(function (x, j) { if (x.id === c.id) i = j; });
+          if (i >= 0) a[i] = c; else a.push(c); n++;
+        });
+        a.sort(function (x, y) { return y.ts - x.ts; }); putClients(a);
+        hzToast('📥 تم استرجاع ' + n + ' عميل من النسخة الاحتياطية'); renderClients();
+      } catch (e) { hzToast('⚠️ الملف مش نسخة احتياطية صالحة'); }
+    };
+    r.readAsText(f);
+  };
+  function renderClients() {
+    var a = clients();
+    cbody.innerHTML = '<div class="tools"><button class="btn" type="button" id="hzCSave">💾 حفظ العميل الحالي</button>' +
+      '<button class="btn sec" type="button" id="hzCRest">📂 فتح من نسخة احتياطية (ملف)</button>' +
+      '<button class="btn sec" type="button" id="hzCBack">📤 نسخة احتياطية على الموبايل</button></div>' +
+      '<div class="empty" id="hzCHint" style="display:' + (a.length ? 'none' : 'block') + ';border:1px dashed #f59e0b;border-radius:12px">مفيش عملاء محفوظين على المتصفح. لو عندك نسخة احتياطية على الموبايل اضغط «فتح من نسخة احتياطية».</div>' +
+      '<div class="list" id="hzCList"></div>';
+    var list = $('hzCList');
+    a.forEach(function (c) {
+      var row = document.createElement('div'); row.className = 'item';
+      var nm2 = document.createElement('div'); nm2.style.flex = '1'; nm2.style.minWidth = '0';
+      nm2.innerHTML = '<div style="font-weight:900;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div><div style="font-size:10px;opacity:.7"></div>';
+      nm2.firstChild.textContent = (c.id === curId ? '● ' : '') + c.name; nm2.lastChild.textContent = fmt(c.ts);
+      var o = document.createElement('button'); o.type = 'button'; o.className = 'btn'; o.textContent = 'فتح';
+      o.onclick = function () { loadData(c.data); curId = c.id; lss('hz_cur_id', curId); cm.style.display = 'none'; hzToast('✅ تم فتح ' + c.name); };
+      var x = document.createElement('button'); x.type = 'button'; x.className = 'btn sec'; x.textContent = '📤';
+      x.onclick = function () { download((c.name || 'client').replace(/[\\/:*?"<>|]/g, '_') + '.json', JSON.stringify({ app: 'dola-survey', v: 2, clients: [c] })); };
+      var d = document.createElement('button'); d.type = 'button'; d.className = 'btn red'; d.textContent = '🗑';
+      d.onclick = function () {
+        if (!window.confirm('حذف العميل «' + c.name + '» نهائيًا؟')) return;
+        putClients(clients().filter(function (z) { return z.id !== c.id; })); if (curId === c.id) { curId = null; lss('hz_cur_id', null); } renderClients();
+      };
+      row.appendChild(nm2); row.appendChild(o); row.appendChild(x); row.appendChild(d); list.appendChild(row);
+    });
+    $('hzCSave').onclick = function () { var n = saveClient(); if (n) { hzToast('💾 تم حفظ ' + n); renderClients(); } };
+    $('hzCRest').onclick = function () { restoreIn.click(); };
+    $('hzCBack').onclick = backupAll;
+    if (S.lang === 'en') { busy = true; try { trNode(cbody); } finally { busy = false; } }
+  }
+  clientsBtn.onclick = function () { $('topMoreDrawer').classList.add('hidden'); renderClients(); cm.style.display = 'flex'; };
+  // حفظ تلقائي على الموبايل
+  var autoTm = null, lastDraft = '';
+  function autoSave() {
+    if (!S.autosave) return;
+    try {
+      var data = snapData(), js = JSON.stringify(data);
+      if (js === lastDraft) return; lastDraft = js;
+      lss('hz_draft', { name: state.clientName, ts: Date.now(), data: data });
+      if (curId) { var a = clients(), rec = a.filter(function (c) { return c.id === curId; })[0]; if (rec) { rec.name = state.clientName || rec.name; rec.ts = Date.now(); rec.data = data; putClients(a); } }
+    } catch (e) {}
+  }
+  function startAuto() { clearInterval(autoTm); if (S.autosave) autoTm = setInterval(autoSave, Math.max(5, +S.autoSecs || 30) * 1000); }
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') autoSave(); });
+  window.addEventListener('pagehide', autoSave);
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      var d = lsg('hz_draft', null);
+      if (S.autosave && d && d.data) { loadData(d.data); lastDraft = JSON.stringify(snapData()); hzToast('♻️ تم استرجاع آخر عمل محفوظ تلقائيًا (' + (d.name || '') + ')'); }
+      else if (!clients().length && !d) { /* أول مرة */ }
+      startAuto(); applyBody(); applyLang(); updNotesBadge(); updNav();
+    }, 1400);
+  });
+
+  /* ---------- عرض 3D للعميل ---------- */
+  function buildScene() {
+    var seg = computeWallGeometry().segments, ch = parseFloat(state.ceilingHeight) || 285, wt = parseFloat(state.wallThickness) || 12, boxes = [];
+    function box(x, y, z, ux, uy, vx, vy, w, d, h, col, a) { if (w > 0.1 && d > 0.1 && h > 0.1) boxes.push({ o: [x, y, z], u: [ux, uy], v: [vx, vy], w: w, d: d, h: h, c: col, a: a || 1 }); }
+    var COL = { door: '#92400e', window: '#7dd3fc', bar_opening: '#ec4899', sink: '#06b6d4', wall_mixer: '#0ea5e9', plumbing: '#22d3ee', electric: '#facc15', light_switch: '#fde047', heater_feed: '#ef4444', wall_box: '#a3a3a3', gas: '#f97316', column: '#ffffff', wall_beam: '#ffffff' };
+    seg.forEach(function (s) {
+      var x1 = s.x1, y1 = -s.y1, dx = s.x2 - s.x1, dy = -(s.y2 - s.y1), L = Math.hypot(dx, dy); if (!L) return;
+      var ux = dx / L, uy = dy / L, ox = -uy, oy = ux, ix = uy, iy = -ux;
+      var wh = s.wall.isBarWall ? Math.min(ch, parseFloat(s.wall.barHeight) || 110) : ch;
+      box(x1, y1, 0, ux, uy, ox, oy, L, wt, wh, '#e5e7eb');
+      s.wall.elements.forEach(function (el) {
+        var left = getElementLeftX(s.wall.length, el), w = Math.max(+el.width || 6, 3), h = Math.max(+el.height || 6, 3), sill = +el.sill || 0, d = Math.max(+el.depth || 3, 2);
+        var bx = x1 + ux * left, by = y1 + uy * left, c = COL[el.type] || '#94a3b8';
+        if (el.type === 'column') { box(bx, by, 0, ux, uy, ix, iy, w, d, ch, c); return; }
+        if (el.type === 'wall_beam') { box(bx, by, ch - h, ux, uy, ix, iy, w, d, h, c); return; }
+        if (el.type === 'door') { box(bx, by, 0, ux, uy, ix, iy, w, 2.5, h, c); return; }
+        if (el.type === 'window' || el.type === 'bar_opening') { box(bx, by, sill, ux, uy, ix, iy, w, 2, h, c, 0.55); return; }
+        box(bx, by, sill, ux, uy, ix, iy, w, Math.min(d, 12), h, c);
+      });
+    });
+    var g = computeWallGeometry();
+    state.spanBeams.forEach(function (sb) {
+      var gm = computeSpanBeamGeometry(sb, g.segments); if (!gm) return;
+      var x1 = gm.pStartX, y1 = -gm.pStartY, dx = gm.pEndX - gm.pStartX, dy = -(gm.pEndY - gm.pStartY), L = Math.hypot(dx, dy); if (L < 1) return;
+      var ux = dx / L, uy = dy / L, nx = -uy, ny = ux, bw = gm.width, dr = gm.drop;
+      box(x1 - nx * bw / 2, y1 - ny * bw / 2, ch - dr, ux, uy, nx, ny, L, bw, dr, '#ffffff');
+    });
+    return { title: state.clientName || '', boxes: boxes, ceil: ch };
+  }
+  // العارض مستقل تمامًا (بدون أي اعتماد خارجي) عشان يتصدّر كملف
+  function hzViewer(canvas, scene) {
+    var ctx = canvas.getContext('2d'), yaw = -0.7, pitch = 0.6, zoom = 1, W = 0, H = 0, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    var mn = [1e9, 1e9, 0], mx = [-1e9, -1e9, 0];
+    scene.boxes.forEach(function (b) {
+      [0, 1].forEach(function (a) { [0, 1].forEach(function (c) {
+        var x = b.o[0] + b.u[0] * b.w * a + b.v[0] * b.d * c, y = b.o[1] + b.u[1] * b.w * a + b.v[1] * b.d * c;
+        mn[0] = Math.min(mn[0], x); mx[0] = Math.max(mx[0], x); mn[1] = Math.min(mn[1], y); mx[1] = Math.max(mx[1], y);
+      }); });
+      mx[2] = Math.max(mx[2], b.o[2] + b.h);
+    });
+    var cx = (mn[0] + mx[0]) / 2, cy = (mn[1] + mx[1]) / 2, cz = mx[2] / 2, R = Math.max(60, Math.hypot(mx[0] - mn[0], mx[1] - mn[1], mx[2]) / 2);
+    function size() { W = canvas.clientWidth; H = canvas.clientHeight; canvas.width = W * dpr; canvas.height = H * dpr; draw(); }
+    function proj(x, y, z) {
+      x -= cx; y -= cy; z -= cz;
+      var a = Math.cos(yaw) * x - Math.sin(yaw) * y, b = Math.sin(yaw) * x + Math.cos(yaw) * y;
+      var v = z * Math.cos(pitch) + b * Math.sin(pitch), dp = b * Math.cos(pitch) - z * Math.sin(pitch);
+      var sc = Math.min(W, H) / (2.3 * R) * zoom;
+      return [W / 2 + a * sc, H / 2 - v * sc, dp];
+    }
+    function shade(hex, k) {
+      var n = parseInt(hex.slice(1), 16), r = n >> 16 & 255, g = n >> 8 & 255, b = n & 255;
+      return 'rgb(' + Math.round(r * k) + ',' + Math.round(g * k) + ',' + Math.round(b * k) + ')';
+    }
+    function draw() {
+      if (!W) return;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      var gr = ctx.createLinearGradient(0, 0, 0, H); gr.addColorStop(0, '#1e293b'); gr.addColorStop(1, '#0f172a'); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H);
+      // أرضية
+      var p = [proj(mn[0] - 40, mn[1] - 40, 0), proj(mx[0] + 40, mn[1] - 40, 0), proj(mx[0] + 40, mx[1] + 40, 0), proj(mn[0] - 40, mx[1] + 40, 0)];
+      ctx.fillStyle = '#334155'; ctx.beginPath(); ctx.moveTo(p[0][0], p[0][1]); for (var i = 1; i < 4; i++) ctx.lineTo(p[i][0], p[i][1]); ctx.closePath(); ctx.fill();
+      var faces = [], L = [0.35, -0.45, 0.82];
+      scene.boxes.forEach(function (b) {
+        var P = function (a, c, h) { return [b.o[0] + b.u[0] * b.w * a + b.v[0] * b.d * c, b.o[1] + b.u[1] * b.w * a + b.v[1] * b.d * c, b.o[2] + b.h * h]; };
+        var C = { '000': P(0, 0, 0), '100': P(1, 0, 0), '110': P(1, 1, 0), '010': P(0, 1, 0), '001': P(0, 0, 1), '101': P(1, 0, 1), '111': P(1, 1, 1), '011': P(0, 1, 1) };
+        [['000', '100', '110', '010'], ['001', '101', '111', '011'], ['000', '100', '101', '001'], ['010', '110', '111', '011'], ['000', '010', '011', '001'], ['100', '110', '111', '101']].forEach(function (f) {
+          var q = f.map(function (k) { return C[k]; }), a1 = [q[1][0] - q[0][0], q[1][1] - q[0][1], q[1][2] - q[0][2]], a2 = [q[3][0] - q[0][0], q[3][1] - q[0][1], q[3][2] - q[0][2]];
+          var n = [a1[1] * a2[2] - a1[2] * a2[1], a1[2] * a2[0] - a1[0] * a2[2], a1[0] * a2[1] - a1[1] * a2[0]], nl = Math.hypot(n[0], n[1], n[2]) || 1;
+          var k = 0.5 + 0.5 * Math.abs((n[0] * L[0] + n[1] * L[1] + n[2] * L[2]) / nl);
+          var pr = q.map(function (v) { return proj(v[0], v[1], v[2]); });
+          faces.push({ pr: pr, d: (pr[0][2] + pr[1][2] + pr[2][2] + pr[3][2]) / 4, c: shade(b.c, k), a: b.a });
+        });
+      });
+      faces.sort(function (a, b) { return b.d - a.d; });
+      faces.forEach(function (f) {
+        ctx.globalAlpha = f.a; ctx.fillStyle = f.c; ctx.strokeStyle = 'rgba(15,23,42,.35)'; ctx.lineWidth = 0.7;
+        ctx.beginPath(); ctx.moveTo(f.pr[0][0], f.pr[0][1]); for (var i = 1; i < 4; i++) ctx.lineTo(f.pr[i][0], f.pr[i][1]); ctx.closePath(); ctx.fill(); ctx.stroke();
+      });
+      ctx.globalAlpha = 1; ctx.fillStyle = '#fde68a'; ctx.font = '800 14px sans-serif'; ctx.textAlign = 'center'; ctx.fillText(scene.title || '', W / 2, 22);
+    }
+    var ptrs = {}, last = 0;
+    canvas.addEventListener('pointerdown', function (e) { canvas.setPointerCapture(e.pointerId); ptrs[e.pointerId] = [e.clientX, e.clientY]; last = 0; });
+    canvas.addEventListener('pointermove', function (e) {
+      var p = ptrs[e.pointerId]; if (!p) return; var ids = Object.keys(ptrs);
+      if (ids.length === 1) { yaw += (e.clientX - p[0]) * 0.008; pitch = Math.max(0.05, Math.min(1.5, pitch + (e.clientY - p[1]) * 0.008)); }
+      else if (ids.length === 2) {
+        var o = ptrs[ids[0] === String(e.pointerId) ? ids[1] : ids[0]], d0 = Math.hypot(p[0] - o[0], p[1] - o[1]), d1 = Math.hypot(e.clientX - o[0], e.clientY - o[1]);
+        if (d0 > 5) zoom = Math.max(0.4, Math.min(6, zoom * d1 / d0));
+      }
+      ptrs[e.pointerId] = [e.clientX, e.clientY]; draw();
+    });
+    function end(e) { delete ptrs[e.pointerId]; }
+    canvas.addEventListener('pointerup', end); canvas.addEventListener('pointercancel', end);
+    canvas.addEventListener('wheel', function (e) { e.preventDefault(); zoom = Math.max(0.4, Math.min(6, zoom * (e.deltaY < 0 ? 1.1 : 0.9))); draw(); }, { passive: false });
+    window.addEventListener('resize', size); size();
+    return { reset: function () { yaw = -0.7; pitch = 0.6; zoom = 1; draw(); }, top: function () { pitch = 1.5; draw(); }, resize: size };
+  }
+  var v3 = document.createElement('div'); v3.id = 'hz3D';
+  v3.innerHTML = '<div class="bar"><span>🧊 عرض العميل 3D — اسحب للتدوير وبإصبعين للتكبير</span><span style="display:flex;gap:6px"><button class="btn" type="button" id="hz3Top">من فوق</button><button class="btn" type="button" id="hz3Rst">إعادة</button><button class="btn" type="button" id="hz3X">✕</button></span></div><canvas id="hz3C"></canvas>';
+  document.body.appendChild(v3);
+  var viewer = null;
+  function open3D() {
+    var sc = buildScene();
+    if (!sc.boxes.length) { hzToast('ارسم حيطان الأول عشان يتولّد العرض'); return; }
+    if (S.view3d === 'file') {
+      var json = JSON.stringify(sc).replace(/</g, '\\u003c');
+      var html = '<!doctype html><html lang="ar"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1"><title>' + (sc.title || '3D').replace(/[<>&]/g, '') + '</title></head><body style="margin:0;background:#0f172a;overflow:hidden"><canvas id="c" style="position:fixed;inset:0;width:100vw;height:100vh;touch-action:none"></canvas><script>var scene=' + json + ';' + hzViewer.toString() + ';hzViewer(document.getElementById("c"),scene);<\/script></body></html>';
+      download((sc.title || 'client').replace(/[\\/:*?"<>|]/g, '_') + '-3D.html', html, 'text/html'); hzToast('📤 ملف الـ3D جاهز — افتحه على الموبايل'); return;
+    }
+    v3.style.display = 'flex';
+    var oldC = $('hz3C'), newC = oldC.cloneNode(false); oldC.parentNode.replaceChild(newC, oldC);
+    setTimeout(function () { viewer = hzViewer(newC, sc); }, 30);
+  }
+  v3Btn.onclick = open3D;
+  $('hz3X').onclick = function () { v3.style.display = 'none'; };
+  $('hz3Rst').onclick = function () { viewer && viewer.reset(); };
+  $('hz3Top').onclick = function () { viewer && viewer.top(); };
+
+  applyBody(); applyLang(); updNotesBadge();
+})();
+
 </script>
 </body>
 </html>
