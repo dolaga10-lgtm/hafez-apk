@@ -1239,7 +1239,7 @@
         <span class="text-lg">🧊</span>
         <div>
           <h3 class="text-xs sm:text-sm font-black text-amber-400">معاينة البلان 3D للعميل على الموبايل (<span id="lbl3DClientName"></span>)</h3>
-          <p class="text-[10px] opacity-75">اسحب بإصبعك للدوران 360° حول المطبخ والغرفة ومشاهدة كل التفاصيل والفتحات والغاز والكمر</p>
+          <p class="text-[10px] opacity-75">اسحب بإصبع للدوران · بإصبعين للتحريك والتكبير (زي سكتش أب) · وضع التجول بيخليك تمشي جوه الغرفة</p>
         </div>
       </div>
       <div class="flex items-center gap-1.5">
@@ -1258,7 +1258,16 @@
       </div>
     </div>
     <div class="relative flex-1 w-full h-full overflow-hidden flex flex-col sm:flex-row">
-      <canvas id="canvas3DPreview" class="flex-1 w-full h-full block"></canvas>
+      <div class="relative flex-1 min-h-0 min-w-0 overflow-hidden">
+        <canvas id="canvas3DPreview" class="absolute inset-0 block"></canvas>
+        <div class="absolute top-2 right-2 left-2 flex flex-wrap items-center gap-1.5 pointer-events-none" dir="rtl">
+          <button id="btn3DHide" type="button" class="pointer-events-auto px-2 py-1 rounded-xl bg-amber-500 text-slate-950 text-[11px] font-black shadow">🧱 إخفاء الحيطة اللي قدامي: شغال</button>
+          <button id="btn3DDims" type="button" class="pointer-events-auto px-2 py-1 rounded-xl bg-white/90 text-slate-800 border border-amber-500 text-[11px] font-black shadow">📏 المقاسات: شغال</button>
+          <button id="btn3DMode" type="button" class="pointer-events-auto px-2 py-1 rounded-xl bg-indigo-500 text-white text-[11px] font-black shadow">🚶 وضع التجول</button>
+          <button id="btn3DReset" type="button" class="pointer-events-auto px-2 py-1 rounded-xl bg-white/90 text-slate-800 border text-[11px] font-black shadow">🏠 إعادة</button>
+        </div>
+        <div class="absolute bottom-2 right-2 pointer-events-none text-[10px] font-bold bg-white/85 text-slate-600 px-2 py-0.5 rounded-lg">إصبع: دوران · إصبعين: تحريك وتكبير</div>
+      </div>
       <!-- Side Notes Sheet inside 3D Preview -->
       <div id="panel3DNotes" class="w-full sm:w-64 max-h-36 sm:max-h-full overflow-y-auto custom-scroll theme-card border-t sm:border-t-0 sm:border-r p-3 text-xs space-y-1.5 shrink-0">
         <div class="font-black text-amber-400 border-b border-slate-700/40 pb-1">📋 ملاحظات العميل على البلان:</div>
@@ -6200,203 +6209,510 @@ end
   // 7. Interactive 3D Client Viewer on Mobile (Pure Canvas 3D Perspective Engine — works 100% online & offline!)
   const modal3D = document.getElementById('modal3DViewer');
   const cv3d = document.getElementById('canvas3DPreview');
-  let cam3D = { yaw: -0.65, pitch: 0.52, zoom: 1.0, panX: 0, panY: 0, dragging: false, lx: 0, ly: 0 };
 
-  function render3DScene() {
-    if (!cv3d || modal3D.classList.contains('hidden')) return;
-    const rect = cv3d.parentElement.getBoundingClientRect();
-    cv3d.width = Math.max(300, rect.width);
-    cv3d.height = Math.max(260, rect.height);
-    const ctx = cv3d.getContext('2d');
-    const W = cv3d.width, H = cv3d.height;
+  function hzEngine3D(cv, D0, opt) {
+    opt = opt || {};
+    var ctx = cv.getContext('2d');
+    var S = { hide: true, dims: true, mode: 'orbit' };
+    var D = null, solids = [], groups = [], flats = [], ghosts = [], labels = [], floorPoly = null;
+    var B = { minX: 0, maxX: 1, minY: 0, maxY: 1, span: 400, cx: 0, cy: 0 };
+    var ch = 285, wt = 12;
+    var cam = { yaw: -0.65, pitch: 0.5, dist: 600, tx: 0, ty: 0, tz: 100 };
+    var W = 360, H = 400, dpr = 1, focal = 400, FOV = 0.9, NEAR = 4;
+    var Cw = [0, 0, 0], R = [1, 0, 0], U = [0, 0, 1], F = [0, 1, 0], Cp = [0, 0];
+    var LIGHT = (function () { var x = -0.4, y = 0.5, z = 0.75, m = Math.sqrt(x * x + y * y + z * z); return [x / m, y / m, z / m]; })();
 
-    ctx.fillStyle = state.isLightMode ? '#0f172a' : '#060911';
-    ctx.fillRect(0, 0, W, H);
+    // ---------- أدوات ----------
+    function hexRGB(h) { var n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+    function shade(h, k) {
+      var c = hexRGB(h);
+      function f(v) { return Math.max(0, Math.min(255, Math.round(v * k))); }
+      return 'rgb(' + f(c[0]) + ',' + f(c[1]) + ',' + f(c[2]) + ')';
+    }
+    function sub(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
+    function dot(a, b) { return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]; }
+    function cross(a, b) { return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]; }
+    function norm(a) { var m = Math.sqrt(dot(a, a)) || 1; return [a[0] / m, a[1] / m, a[2] / m]; }
 
-    const { segments } = computeWallGeometry();
-    if (!segments.length) return;
+    function makeSolid(faces, col, line, alpha) {
+      var sx = 0, sy = 0, sz = 0, n = 0;
+      faces.forEach(function (f) { f.pts.forEach(function (p) { sx += p[0]; sy += p[1]; sz += p[2]; n++; }); });
+      var ctr = [sx / n, sy / n, sz / n];
+      faces.forEach(function (f) {
+        var a = f.pts[0], b = f.pts[1], c = f.pts[2];
+        var nn = norm(cross(sub(b, a), sub(c, a)));
+        var fx = 0, fy = 0, fz = 0;
+        f.pts.forEach(function (p) { fx += p[0]; fy += p[1]; fz += p[2]; });
+        var fc = [fx / f.pts.length, fy / f.pts.length, fz / f.pts.length];
+        if (dot(nn, sub(fc, ctr)) < 0) nn = [-nn[0], -nn[1], -nn[2]];
+        f.n = nn; f.fc = fc;
+        if (!f.col) f.col = col;
+      });
+      return { faces: faces, ctr: ctr, line: line || 'rgba(30,41,59,.55)', alpha: alpha == null ? 1 : alpha };
+    }
+    function boxFaces(p) { // p: 8 نقاط (0-3 تحت، 4-7 فوق)
+      return [
+        { pts: [p[0], p[1], p[2], p[3]] }, { pts: [p[4], p[5], p[6], p[7]], top: true },
+        { pts: [p[0], p[1], p[5], p[4]] }, { pts: [p[1], p[2], p[6], p[5]] },
+        { pts: [p[2], p[3], p[7], p[6]] }, { pts: [p[3], p[0], p[4], p[7]] }
+      ];
+    }
 
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    segments.forEach((s) => {
-      minX = Math.min(minX, s.x1, s.x2);
-      maxX = Math.max(maxX, s.x1, s.x2);
-      minY = Math.min(minY, s.y1, s.y2);
-      maxY = Math.max(maxY, s.y1, s.y2);
-    });
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
-    const ceilH = parseFloat(state.ceilingHeight) || 285;
-    const centerZ = ceilH * 0.42;
-    const maxSpan = Math.max(250, maxX - minX, maxY - minY, ceilH);
-    const baseScale = (Math.min(W, H) * 0.68) / maxSpan * cam3D.zoom;
-
-    const cosY = Math.cos(cam3D.yaw), sinY = Math.sin(cam3D.yaw);
-    const cosP = Math.cos(cam3D.pitch), sinP = Math.sin(cam3D.pitch);
-
-    function project3D(wx, wy, wz) {
-      const dx = wx - centerX;
-      const dy = wy - centerY;
-      const dz = wz - centerZ;
-      const rx = dx * cosY - dy * sinY;
-      const ry = dx * sinY + dy * cosY;
-      const rz = dz * cosP - ry * sinP;
-      const depth = ry * cosP + dz * sinP;
-      const persp = 1200 / Math.max(350, 1200 + depth * 0.85);
+    // إطار محلي للحائط: a على طول الحائط، b من وش الحائط الداخلي لجوه الغرفة، c الارتفاع
+    function frame(seg) {
+      var ux = Math.cos(seg.rad), uy = Math.sin(seg.rad);
+      var nx = seg.nx, ny = seg.ny;
       return {
-        x: W / 2 + cam3D.panX + rx * baseScale * persp,
-        y: H / 2 + cam3D.panY - rz * baseScale * persp,
-        depth: depth
+        pt: function (a, b, c) { return [seg.x1 + ux * a + nx * b, seg.y1 + uy * a + ny * b, c]; },
+        ux: ux, uy: uy, nx: nx, ny: ny
       };
     }
-
-    // Draw 3D Floor Grid
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.16)';
-    ctx.lineWidth = 1;
-    const gridPad = 40;
-    for (let gx = Math.floor((minX - gridPad) / 50) * 50; gx <= maxX + gridPad; gx += 50) {
-      const p1 = project3D(gx, minY - gridPad, 0);
-      const p2 = project3D(gx, maxY + gridPad, 0);
-      ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+    function lbox(fr, a0, a1, b0, b1, c0, c1, col, o) {
+      o = o || {};
+      var p = [fr.pt(a0, b0, c0), fr.pt(a1, b0, c0), fr.pt(a1, b1, c0), fr.pt(a0, b1, c0),
+               fr.pt(a0, b0, c1), fr.pt(a1, b0, c1), fr.pt(a1, b1, c1), fr.pt(a0, b1, c1)];
+      var s = makeSolid(boxFaces(p), col, o.line, o.alpha);
+      if (o.top) s.faces.forEach(function (f) { if (f.top) f.col = o.top; });
+      return s;
     }
-    for (let gy = Math.floor((minY - gridPad) / 50) * 50; gy <= maxY + gridPad; gy += 50) {
-      const p1 = project3D(minX - gridPad, gy, 0);
-      const p2 = project3D(maxX + gridPad, gy, 0);
-      ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+    function lcyl(fr, axis, ca, cb, cc, r, len, col, o) {
+      o = o || {}; var sides = o.sides || 10, rings = [[], []], i, t;
+      for (var k = 0; k < 2; k++) {
+        var off = k === 0 ? 0 : len;
+        for (i = 0; i < sides; i++) {
+          t = i / sides * Math.PI * 2;
+          var u = Math.cos(t) * r, v = Math.sin(t) * r;
+          if (axis === 'a') rings[k].push(fr.pt(ca + off, cb + u, cc + v));
+          else if (axis === 'b') rings[k].push(fr.pt(ca + u, cb + off, cc + v));
+          else rings[k].push(fr.pt(ca + u, cb + v, cc + off));
+        }
+      }
+      var faces = [];
+      for (i = 0; i < sides; i++) {
+        var j = (i + 1) % sides;
+        faces.push({ pts: [rings[0][i], rings[0][j], rings[1][j], rings[1][i]] });
+      }
+      faces.push({ pts: rings[0].slice().reverse() });
+      faces.push({ pts: rings[1].slice(), top: true });
+      var s = makeSolid(faces, col, o.line, o.alpha);
+      if (o.cap) s.faces[s.faces.length - 1].col = o.cap;
+      return s;
     }
-
-    // Collect 3D polygons for painter's algorithm depth sorting
-    const polys = [];
-    const labels3D = [];
-
-    function pushQuad(pts3D, fill, stroke, lineWidth, alpha) {
-      const proj = pts3D.map((p) => project3D(p[0], p[1], p[2]));
-      const avgDepth = proj.reduce((s, p) => s + p.depth, 0) / proj.length;
-      polys.push({ proj, fill, stroke, lineWidth: lineWidth || 1.5, alpha: alpha || 1, depth: avgDepth });
-    }
-
-    function pushBox3D(pOrigin, uVec, vVec, w, d, h, fillTop, fillSide, stroke) {
-      const p000 = pOrigin;
-      const p100 = [p000[0] + uVec[0] * w, p000[1] + uVec[1] * w, p000[2]];
-      const p110 = [p100[0] + vVec[0] * d, p100[1] + vVec[1] * d, p000[2]];
-      const p010 = [p000[0] + vVec[0] * d, p000[1] + vVec[1] * d, p000[2]];
-      const p001 = [p000[0], p000[1], p000[2] + h];
-      const p101 = [p100[0], p100[1], p100[2] + h];
-      const p111 = [p110[0], p110[1], p110[2] + h];
-      const p011 = [p010[0], p010[1], p010[2] + h];
-      pushQuad([p000, p100, p101, p001], fillSide, stroke, 1.2, 0.95);
-      pushQuad([p010, p110, p111, p011], fillSide, stroke, 1.2, 0.95);
-      pushQuad([p000, p010, p011, p001], fillSide, stroke, 1.2, 0.95);
-      pushQuad([p100, p110, p111, p101], fillSide, stroke, 1.2, 0.95);
-      pushQuad([p001, p101, p111, p011], fillTop, stroke, 1.4, 0.98);
+    function wbox(o, uv, vv, w, d, h, col, topc, line) { // صندوق بإحداثيات المسقط (للكمر)
+      var p0 = o, p1 = [o[0] + uv[0] * w, o[1] + uv[1] * w, o[2]], p2 = [p1[0] + vv[0] * d, p1[1] + vv[1] * d, o[2]], p3 = [o[0] + vv[0] * d, o[1] + vv[1] * d, o[2]];
+      var q = function (p) { return [p[0], p[1], p[2] + h]; };
+      var s = makeSolid(boxFaces([p0, p1, p2, p3, q(p0), q(p1), q(p2), q(p3)]), col, line);
+      s.faces.forEach(function (f) { if (f.top) f.col = topc; });
+      return s;
     }
 
-    const wThick = parseFloat(state.wallThickness) || 12;
-
-    segments.forEach((seg, idx) => {
-      const ux = Math.cos(seg.rad), uy = Math.sin(seg.rad);
-      const nx = -uy, ny = ux; // inward normal
-      const wallH = seg.wall.isBarWall ? (parseFloat(seg.wall.barHeight) || 110) : ceilH;
-
-      // Wall 3D slab
-      pushBox3D(
-        [seg.x1, seg.y1, 0],
-        [ux, uy],
-        [-nx, -ny],
-        seg.wall.length,
-        wThick,
-        wallH,
-        '#f8fafc',
-        seg.wall.isBarWall ? '#fbcfe8' : '#e2e8f0',
-        '#334155'
-      );
-
-      const midX = (seg.x1 + seg.x2) / 2, midY = (seg.y1 + seg.y2) / 2;
-      labels3D.push({
-        pt: [midX, midY, wallH + 14],
-        text: `حائط #${idx + 1} (${seg.wall.length}سم)`,
-        color: '#fbbf24'
+    // ---------- بناء المشهد ----------
+    function buildScene(data) {
+      D = data; solids = []; groups = []; flats = []; ghosts = []; labels = []; floorPoly = null;
+      if (!D || !D.segments || !D.segments.length) return;
+      ch = D.ceilingHeight || 285; wt = D.wallThickness || 12;
+      var segs = D.segments, minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9, mx = 0, my = 0;
+      segs.forEach(function (s) {
+        minX = Math.min(minX, s.x1, s.x2); maxX = Math.max(maxX, s.x1, s.x2);
+        minY = Math.min(minY, s.y1, s.y2); maxY = Math.max(maxY, s.y1, s.y2);
+        s.mx = (s.x1 + s.x2) / 2; s.my = (s.y1 + s.y2) / 2; mx += s.mx; my += s.my;
       });
-
-      // Wall Elements in 3D
-      seg.wall.elements.forEach((el) => {
-        const leftCm = getElementLeftX(seg.wall.length, el);
-        const sx = seg.x1 + ux * leftCm;
-        const sy = seg.y1 + uy * leftCm;
-        const ew = Math.max(8, parseFloat(el.width) || 20);
-        const eh = Math.max(8, el.type === 'column' ? ceilH : (parseFloat(el.height) || 20));
-        const ed = Math.max(3, parseFloat(el.depth) || 10);
-        let z0 = parseFloat(el.sill) || 0;
-        if (el.type === 'door' || el.type === 'column') z0 = 0;
-        else if (el.type === 'wall_beam') z0 = ceilH - eh;
-
-        let fillTop = '#cbd5e1', fillSide = '#94a3b8', stroke = '#0f172a';
-        if (el.type === 'door') { fillTop = '#b45309'; fillSide = '#92400e'; stroke = '#451a03'; }
-        else if (el.type === 'window') { fillTop = '#7dd3fc'; fillSide = '#38bdf8'; stroke = '#0284c7'; }
-        else if (el.type === 'bar_opening') { fillTop = '#f472b6'; fillSide = '#db2777'; stroke = '#831843'; }
-        else if (el.type === 'column' || el.type === 'wall_beam') { fillTop = '#ffffff'; fillSide = '#cbd5e1'; stroke = '#1e293b'; }
-        else if (el.type === 'sink' || el.type === 'plumbing' || el.type === 'wall_mixer') { fillTop = '#22d3ee'; fillSide = '#0891b2'; stroke = '#164e63'; }
-        else if (el.type === 'gas') { fillTop = '#facc15'; fillSide = '#eab308'; stroke = '#713f12'; }
-        else if (el.type === 'electric' || el.type === 'light_switch') { fillTop = '#fde047'; fillSide = '#f59e0b'; stroke = '#78350f'; }
-
-        pushBox3D([sx, sy, z0], [ux, uy], [nx, ny], ew, ed, eh, fillTop, fillSide, stroke);
+      mx /= segs.length; my /= segs.length;
+      B = { minX: minX, maxX: maxX, minY: minY, maxY: maxY, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2, span: Math.max(250, maxX - minX, maxY - minY, ch) };
+      // اتجاه "جوه الغرفة" لكل حائط (من مركز الحيطان)
+      segs.forEach(function (s) {
+        var ux = Math.cos(s.rad), uy = Math.sin(s.rad), nx = -uy, ny = ux;
+        var side = (mx - s.mx) * nx + (my - s.my) * ny;
+        if (segs.length > 1 && side < 0) { nx = -nx; ny = -ny; }
+        s.nx = nx; s.ny = ny; // نحو الداخل
       });
-    });
-
-    // Spanning Beams in 3D
-    state.spanBeams.forEach((sb, bIdx) => {
-      const g = computeSpanBeamGeometry(sb, segments);
-      if (!g) return;
-      const bw = g.width || 15;
-      const bdrop = g.drop || 25;
-      const nx = -g.dirY, ny = g.dirX;
-      pushBox3D(
-        [g.pStartX - nx * (bw / 2), g.pStartY - ny * (bw / 2), ceilH - bdrop],
-        [g.dirX, g.dirY],
-        [nx, ny],
-        g.actualLen,
-        bw,
-        bdrop,
-        '#fef3c7',
-        '#fde68a',
-        '#d97706'
-      );
-      labels3D.push({
-        pt: [(g.pStartX + g.pEndX) / 2, (g.pStartY + g.pEndY) / 2, ceilH + 6],
-        text: `كمر #${bIdx + 1} (${g.actualLen}سم)`,
-        color: '#38bdf8'
+      segs.forEach(function (s, si) {
+        var fr = frame(s), len = s.length, wh = s.isBarWall ? (s.barHeight || 110) : ch;
+        var g = { seg: s, idx: si, slab: null, items: [], mid: [s.mx, s.my, wh / 2], out: [-s.nx, -s.ny], label: 'ح' + (si + 1) + ' · ' + Math.round(len) + ' سم', lz: wh + 8 };
+        var zTop = wh;
+        g.slab = (function () {
+          var p = [fr.pt(0, -wt, 0), fr.pt(len, -wt, 0), fr.pt(len, 0, 0), fr.pt(0, 0, 0), fr.pt(0, -wt, zTop), fr.pt(len, -wt, zTop), fr.pt(len, 0, zTop), fr.pt(0, 0, zTop)];
+          var so = makeSolid(boxFaces(p), s.isBarWall ? '#efd3e1' : '#ece8de', '#4b5563');
+          so.faces.forEach(function (f) { if (f.top) f.col = '#ffffff'; });
+          return so;
+        })();
+        g.foot = [fr.pt(0, -wt, 0), fr.pt(len, -wt, 0), fr.pt(len, 0, 0), fr.pt(0, 0, 0)];
+        (s.elements || []).forEach(function (el) { addElement(g, fr, s, el); });
+        groups.push(g);
       });
-    });
+      // الكمر الواصل
+      (D.spanBeams || []).forEach(function (b, bi) {
+        var nx = -b.dirY, ny = b.dirX;
+        var so = wbox([b.pStartX - nx * b.width / 2, b.pStartY - ny * b.width / 2, ch - b.drop], [b.dirX, b.dirY], [nx, ny], b.actualLen, b.width, b.drop, '#f1ede0', '#fffdf5', '#a16207');
+        groups.push({ beam: true, slab: so, items: [], mid: so.ctr, label: 'كمر #' + (bi + 1) + ' · ' + Math.round(b.actualLen) + ' سم', lz: ch + 6, lx: so.ctr[0], ly: so.ctr[1] });
+      });
+      // الأرضية
+      var pts = segs.map(function (s) { return [s.x1, s.y1, 0]; });
+      pts.push([segs[segs.length - 1].x2, segs[segs.length - 1].y2, 0]);
+      floorPoly = pts.length >= 3 ? pts : null;
+      // البلاعات الأرضية
+      (D.floorItems || []).forEach(function (f) {
+        var r = Math.max(4, (f.d || 10) / 2), n = 16, ring = [], ring2 = [], i, t;
+        for (i = 0; i < n; i++) { t = i / n * Math.PI * 2; ring.push([f.x + Math.cos(t) * r, f.y + Math.sin(t) * r, 0.4]); ring2.push([f.x + Math.cos(t) * r * 0.82, f.y + Math.sin(t) * r * 0.82, 0.6]); }
+        flats.push({ pts: ring, col: '#aab2bc', line: '#6b7280' });
+        flats.push({ pts: ring2, col: '#3b424b', line: '#2b3037' });
+        [[-1, 0, 1, 0], [0, -1, 0, 1], [-0.7, -0.7, 0.7, 0.7], [-0.7, 0.7, 0.7, -0.7]].forEach(function (c) {
+          flats.push({ line2: [[f.x + c[0] * r * 0.82, f.y + c[1] * r * 0.82, 0.8], [f.x + c[2] * r * 0.82, f.y + c[3] * r * 0.82, 0.8]], col: '#aab2bc' });
+        });
+      });
+    }
 
-    // Sort polygons back-to-front
-    polys.sort((a, b) => b.depth - a.depth);
-    polys.forEach((p) => {
-      ctx.save();
-      ctx.globalAlpha = p.alpha;
-      ctx.fillStyle = p.fill;
-      ctx.strokeStyle = p.stroke;
-      ctx.lineWidth = p.lineWidth;
-      ctx.beginPath();
-      ctx.moveTo(p.proj[0].x, p.proj[0].y);
-      for (let i = 1; i < p.proj.length; i++) ctx.lineTo(p.proj[i].x, p.proj[i].y);
+    function addElement(g, fr, seg, el) {
+      var a0 = el.leftCm || 0, w = Math.max(2, el.width || 10), h = Math.max(2, el.height || 10), d = Math.max(1, el.depth || 3), z0 = el.sill || 0;
+      var t = el.type, sub = el.subType || '', add = function (s) { g.items.push(s); };
+      var len = seg.length;
+      if (t === 'door' || t === 'column') z0 = 0;
+      if (t === 'column') {
+        add(lbox(fr, a0, a0 + w, 0, d, 0, ch, '#efece4', { line: '#4b5563', top: '#ffffff' }));
+      } else if (t === 'wall_beam') {
+        var bh = Math.min(h, ch);
+        add(boxAt(fr, a0, a0 + w, 0, d, ch - bh, ch, '#efece4', '#fffdf5'));
+      } else if (t === 'door') {
+        var hh = Math.min(h, ch - 5), wood = '#a86a2f', frm = '#6e4220';
+        add(boxAt(fr, a0, a0 + 6, 0, 4, 0, hh, frm));
+        add(boxAt(fr, a0 + w - 6, a0 + w, 0, 4, 0, hh, frm));
+        add(boxAt(fr, a0 + 6, a0 + w - 6, 0, 4, hh - 6, hh, frm));
+        add(boxAt(fr, a0 + 6, a0 + w - 6, 0, 2.5, 0, hh - 6, wood));
+        var pw0 = a0 + 15, pw1 = a0 + w - 15;
+        add(boxAt(fr, pw0, pw1, 2.5, 3.6, 16, hh * 0.46, '#b87b3a'));
+        add(boxAt(fr, pw0, pw1, 2.5, 3.6, hh * 0.52, hh - 24, '#b87b3a'));
+        var hx = (a0 - 0 < len - (a0 + w)) ? a0 + w - 14 : a0 + 14;
+        add(lcyl(fr, 'b', hx, 2.5, 100, 3.4, 1.2, '#b9bec7', { sides: 12 }));
+        add(lcyl(fr, 'b', hx, 3.7, 100, 1.1, 7, '#c9ced6'));
+        var leverStart = (hx > a0 + w / 2) ? hx - 11 : hx;
+        add(lcyl(fr, 'a', leverStart, 3.7 + 6.4, 100, 1.1, 11, '#c9ced6'));
+      } else if (t === 'window' || t === 'bar_opening') {
+        var isBar = t === 'bar_opening', frame0 = isBar ? '#e9e5da' : (/ألوميتال|الومنيوم|ألومنيوم/.test(sub) ? '#d5d9de' : '#f2f2ee');
+        var z1 = z0 + h, fw = 5;
+        add(boxAt(fr, a0, a0 + fw, 0, 4, z0, z1, frame0));
+        add(boxAt(fr, a0 + w - fw, a0 + w, 0, 4, z0, z1, frame0));
+        add(boxAt(fr, a0 + fw, a0 + w - fw, 0, 4, z0, z0 + fw, frame0));
+        add(boxAt(fr, a0 + fw, a0 + w - fw, 0, 4, z1 - fw, z1, frame0));
+        add(lbox(fr, a0 + fw, a0 + w - fw, 0.8, 1.6, z0 + fw, z1 - fw, isBar ? '#4a5a70' : '#9fd8f6', { alpha: isBar ? 0.95 : 0.6, line: 'rgba(30,64,100,.5)' }));
+        if (!isBar && (w > 80 || /ضلفتين|2/.test(sub))) add(boxAt(fr, a0 + w / 2 - 1.8, a0 + w / 2 + 1.8, 0, 4.5, z0 + fw, z1 - fw, frame0));
+        if (!isBar && h > 130) add(boxAt(fr, a0 + fw, a0 + w - fw, 0, 4.5, (z0 + z1) / 2 - 1.5, (z0 + z1) / 2 + 1.5, frame0));
+        add(boxAt(fr, a0 - 3, a0 + w + 3, 0, isBar ? Math.max(d, 18) : 8, z0 - 3.5, z0, isBar ? '#f4f4f1' : '#e6e2d8', '#ffffff'));
+      } else if (t === 'sink' || t === 'wall_mixer') {
+        var rr = Math.max(1.5, Math.min(w, h) * 0.16);
+        var spec = t === 'sink' ? [[.5, .55, 'drain'], [.14, .3, 'hot'], [.86, .3, 'cold']] : [[.15, .5, 'hot'], [.85, .5, 'cold'], [.5, .7, 'drain']];
+        add(boxAt(fr, a0 - 1, a0 + w + 1, 0, 0.6, z0 - 1, z0 + h + 1, '#f1f5f9'));
+        spec.forEach(function (sp) {
+          var cx = a0 + w * sp[0], cz = z0 + h - h * sp[1];
+          if (sp[2] === 'drain') {
+            add(lcyl(fr, 'b', cx, 0.6, cz, rr * 1.35 + 0.8, Math.max(4, d + 2), '#cfd2d8', { sides: 14, cap: '#2f353d' }));
+          } else {
+            var cc = sp[2] === 'hot' ? '#ef4444' : '#3b82f6';
+            add(lcyl(fr, 'b', cx, 0.6, cz, rr * 0.55 + 0.4, 3.2, '#c9a24a', { sides: 10 }));
+            add(lcyl(fr, 'b', cx, 3.8, cz, rr * 0.8 + 0.3, 1.8, cc, { sides: 10 }));
+          }
+        });
+      } else if (t === 'plumbing') {
+        add(boxAt(fr, a0 - 2, a0 + w + 2, 0, 1.4, z0 - 2, z0 + h + 2, '#f3f4f6'));
+        var pcx = a0 + w / 2, pcz = z0 + h * 0.4;
+        add(lcyl(fr, 'b', pcx, 1.4, pcz, 3.6, Math.max(5, d), '#cfd2d8', { sides: 14, cap: '#2f353d' }));
+        add(lcyl(fr, 'b', a0 + w * 0.2, 1.4, z0 + h * 0.8, 1.7, 3, '#c9a24a'));
+        add(lcyl(fr, 'b', a0 + w * 0.2, 4.4, z0 + h * 0.8, 2.4, 1.6, '#3b82f6'));
+        add(lcyl(fr, 'b', a0 + w * 0.8, 1.4, z0 + h * 0.8, 1.7, 3, '#c9a24a'));
+        add(lcyl(fr, 'b', a0 + w * 0.8, 4.4, z0 + h * 0.8, 2.4, 1.6, '#ef4444'));
+      } else if (t === 'electric') {
+        var pw = Math.max(8, Math.min(w, 16)), ph = Math.max(8, Math.min(h, 12)), cxp = a0 + w / 2, czp = z0 + h / 2;
+        add(boxAt(fr, cxp - pw / 2, cxp + pw / 2, 0, 1.4, czp - ph / 2, czp + ph / 2, '#fbfbf8'));
+        add(lcyl(fr, 'b', cxp - pw * 0.2, 1.4, czp, 0.9, 0.3, '#1f2937', { sides: 8 }));
+        add(lcyl(fr, 'b', cxp + pw * 0.2, 1.4, czp, 0.9, 0.3, '#1f2937', { sides: 8 }));
+        add(boxAt(fr, cxp - 0.5, cxp + 0.5, 1.4, 1.7, czp - ph * 0.38, czp - ph * 0.22, '#8b8f96'));
+      } else if (t === 'light_switch') {
+        var sw = Math.max(7, Math.min(w, 9)), sh = Math.max(7, Math.min(h, 9)), cxs = a0 + w / 2, czs = z0 + h / 2;
+        add(boxAt(fr, cxs - sw / 2, cxs + sw / 2, 0, 1.2, czs - sh / 2, czs + sh / 2, '#fbfbf8'));
+        add(boxAt(fr, cxs - sw * 0.28, cxs + sw * 0.28, 1.2, 1.9, czs - sh * 0.32, czs + sh * 0.32, '#e4e4de'));
+      } else if (t === 'gas') {
+        var gk = el.gk || 'hpipe', Y = '#e8b923';
+        if (gk === 'meter') {
+          add(boxAt(fr, a0, a0 + w, 2, d + 2, z0, z0 + h, '#d9b43a'));
+          add(boxAt(fr, a0 + w * 0.14, a0 + w * 0.86, d + 2, d + 2.5, z0 + h * 0.55, z0 + h * 0.86, '#1f2937'));
+          add(boxAt(fr, a0 + w * 0.22, a0 + w * 0.78, d + 2.5, d + 2.8, z0 + h * 0.61, z0 + h * 0.8, '#e5e7eb'));
+          add(lcyl(fr, 'c', a0 + w * 0.26, 2 + (d) / 2, z0 + h, 1.7, 12, Y, { sides: 10 }));
+          add(lcyl(fr, 'c', a0 + w * 0.74, 2 + (d) / 2, z0 + h, 1.7, 12, Y, { sides: 10 }));
+          add(lcyl(fr, 'c', a0 + w * 0.26, 2 + (d) / 2, z0 + h + 12, 2.3, 1.6, '#9a7b12', { sides: 6 }));
+          add(lcyl(fr, 'c', a0 + w * 0.74, 2 + (d) / 2, z0 + h + 12, 2.3, 1.6, '#9a7b12', { sides: 6 }));
+        } else if (gk === 'valve') {
+          var vr = Math.max(2, Math.min(w, h) * 0.3), vcz = z0 + h / 2;
+          add(lcyl(fr, 'a', a0, vr + 1.5, vcz, vr, w, '#d9a406', { sides: 12 }));
+          add(lcyl(fr, 'c', a0 + w / 2, vr + 1.5, vcz, 1.1, vr + 3.5, '#9a7b12'));
+          add(boxAt(fr, a0 + 1, a0 + w - 1, vr + 1.5 - 1.1, vr + 1.5 + 1.1, vcz + vr + 2.6, vcz + vr + 4.2, '#dc2626'));
+        } else if (gk === 'vpipe') {
+          var pr = Math.max(1.2, Math.min(w, 6) / 2);
+          add(lcyl(fr, 'c', a0 + w / 2, pr + 1.5, z0, pr, h, Y, { sides: 10 }));
+          for (var cz2 = z0 + 20; cz2 < z0 + h; cz2 += 70) add(boxAt(fr, a0 + w / 2 - pr - 0.8, a0 + w / 2 + pr + 0.8, 0, pr + 2.2, cz2, cz2 + 1.6, '#6b7280'));
+        } else {
+          var hr = Math.max(1.2, Math.min(h, 6) / 2), hcz = z0 + h / 2;
+          add(lcyl(fr, 'a', a0, hr + 1.5, hcz, hr, w, Y, { sides: 10 }));
+          for (var ca = a0 + 5; ca < a0 + w; ca += 60) add(boxAt(fr, ca, ca + 1.6, 0, hr + 1.5 + hr + 0.8, hcz - hr - 0.8, hcz + hr + 0.8, '#6b7280'));
+        }
+      } else {
+        add(boxAt(fr, a0, a0 + w, 0, d, z0, z0 + h, '#cbd5e1'));
+      }
+    }
+    function boxAt(fr, a0, a1, b0, b1, c0, c1, col, top) { return lbox(fr, a0, a1, b0, b1, c0, c1, col, { top: top }); }
+
+    // ---------- الكاميرا ----------
+    function camSetup() {
+      var sy = Math.sin(cam.yaw), cy = Math.cos(cam.yaw), sp = Math.sin(cam.pitch), cp = Math.cos(cam.pitch);
+      F = [-sy * cp, cy * cp, -sp];
+      R = [cy, sy, 0];
+      U = [R[1] * F[2], -R[0] * F[2], R[0] * F[1] - R[1] * F[0]];
+      var T = [cam.tx, -cam.ty, cam.tz];
+      Cw = [T[0] - F[0] * cam.dist, T[1] - F[1] * cam.dist, T[2] - F[2] * cam.dist];
+      Cp = [Cw[0], -Cw[1]];
+    }
+    function clampCam() {
+      cam.pitch = Math.max(S.mode === 'look' ? -1.3 : 0.03, Math.min(S.mode === 'look' ? 1.3 : 1.55, cam.pitch));
+      cam.dist = Math.max(S.mode === 'look' ? 20 : 40, Math.min(30000, cam.dist));
+      camSetup();
+      if (Cw[2] < 12) { cam.tz += 12 - Cw[2]; camSetup(); }
+    }
+    function toCam(p) {
+      var v = [p[0] - Cw[0], -p[1] - Cw[1], p[2] - Cw[2]];
+      return [dot(v, R), dot(v, U), dot(v, F)];
+    }
+    function projPoly(pts) {
+      var v = pts.map(toCam), out = [], n = v.length, i;
+      for (i = 0; i < n; i++) {
+        var a = v[i], b = v[(i + 1) % n], ina = a[2] >= NEAR, inb = b[2] >= NEAR;
+        if (ina) out.push(a);
+        if (ina !== inb) { var t = (NEAR - a[2]) / (b[2] - a[2]); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, NEAR]); }
+      }
+      if (out.length < 3) return null;
+      return out.map(function (c) { return [W / 2 + focal * c[0] / c[2], H / 2 - focal * c[1] / c[2]]; });
+    }
+    function projPt(p) {
+      var c = toCam(p); if (c[2] < NEAR) return null;
+      return [W / 2 + focal * c[0] / c[2], H / 2 - focal * c[1] / c[2]];
+    }
+    function poly(sp, fill, stroke, lw, alpha) {
+      ctx.globalAlpha = alpha == null ? 1 : alpha;
+      ctx.beginPath(); ctx.moveTo(sp[0][0], sp[0][1]);
+      for (var i = 1; i < sp.length; i++) ctx.lineTo(sp[i][0], sp[i][1]);
       ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
-      ctx.restore();
-    });
+      if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+      if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1; ctx.stroke(); }
+      ctx.globalAlpha = 1;
+    }
+    function dist2(p) { var dx = p[0] - Cp[0], dy = p[1] - Cp[1], dz = p[2] - Cw[2]; return dx * dx + dy * dy + dz * dz; }
+    function drawSolid(s) {
+      s.faces.forEach(function (f) {
+        var vx = Cp[0] - f.fc[0], vy = Cp[1] - f.fc[1], vz = Cw[2] - f.fc[2];
+        if (f.n[0] * vx + f.n[1] * vy + f.n[2] * vz <= 0) return; // وش مدّي ضهره
+        var sp = projPoly(f.pts); if (!sp) return;
+        var k = 0.58 + 0.42 * Math.max(0, dot(f.n, LIGHT));
+        poly(sp, shade(f.col, k), s.line, 0.8, s.alpha);
+      });
+    }
 
-    // Draw 3D Labels
-    ctx.font = '800 11px Cairo, sans-serif';
-    ctx.textAlign = 'center';
-    labels3D.forEach((lb) => {
-      const pr = project3D(lb.pt[0], lb.pt[1], lb.pt[2]);
-      const tw = ctx.measureText(lb.text).width + 12;
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-      ctx.beginPath();
-      ctx.roundRect(pr.x - tw / 2, pr.y - 10, tw, 18, 5);
-      ctx.fill();
-      ctx.fillStyle = lb.color;
-      ctx.fillText(lb.text, pr.x, pr.y + 3);
+    // ---------- الرسم ----------
+    function resize() {
+      var par = cv.parentElement || cv, r = par.getBoundingClientRect();
+      W = Math.max(50, r.width); H = Math.max(50, r.height);
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      cv.style.width = W + 'px'; cv.style.height = H + 'px';
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      focal = 0.5 * Math.min(W, H) / Math.tan(FOV / 2) * 1.15;
+    }
+    function draw() {
+      resize();
+      var sky = ctx.createLinearGradient(0, 0, 0, H);
+      sky.addColorStop(0, '#a9cdee'); sky.addColorStop(0.5, '#e4eef7'); sky.addColorStop(1, '#f4f5f1');
+      ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+      if (!D || !groups.length) return;
+      clampCam();
+      // الأرض الكبيرة
+      var gm = B.span * 3;
+      var gp = projPoly([[B.cx - gm, B.cy - gm, 0], [B.cx + gm, B.cy - gm, 0], [B.cx + gm, B.cy + gm, 0], [B.cx - gm, B.cy + gm, 0]]);
+      if (gp) poly(gp, '#dedcd2', null);
+      if (floorPoly) { var fp = projPoly(floorPoly); if (fp) poly(fp, '#cfc6b3', 'rgba(90,80,60,.35)', 1); }
+      flats.forEach(function (f) {
+        if (f.line2) {
+          var a = projPt(f.line2[0]), b = projPt(f.line2[1]);
+          if (a && b) { ctx.strokeStyle = f.col; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); }
+          return;
+        }
+        var sp = projPoly(f.pts); if (sp) poly(sp, f.col, f.line, 0.8);
+      });
+      // تحديد الحيطان المخفية (اللي في وشّك)
+      var hideOn = S.hide && cam.pitch < 1.2;
+      var vis = [];
+      labels = [];
+      groups.forEach(function (g) {
+        var hidden = false;
+        if (g.seg && hideOn) {
+          var side = (Cp[0] - g.mid[0]) * g.out[0] + (Cp[1] - g.mid[1]) * g.out[1];
+          hidden = side > 6;
+        }
+        g.hidden = hidden;
+        if (hidden) {
+          if (g.foot) { var gpf = projPoly(g.foot); if (gpf) { ctx.setLineDash([5, 4]); poly(gpf, 'rgba(120,130,150,.12)', 'rgba(71,85,105,.55)', 1); ctx.setLineDash([]); } }
+          return;
+        }
+        g.d2 = dist2(g.mid); vis.push(g);
+      });
+      vis.sort(function (a, b) { return b.d2 - a.d2; });
+      vis.forEach(function (g) {
+        drawSolid(g.slab);
+        var its = g.items.slice();
+        its.sort(function (a, b) { return dist2(b.ctr) - dist2(a.ctr); });
+        its.forEach(drawSolid);
+        if (S.dims) labels.push({ p: g.lx != null ? [g.lx, g.ly, g.lz] : [g.mid[0], g.mid[1], g.lz], t: g.label });
+      });
+      if (S.dims) {
+        ctx.font = '700 11px system-ui, Tahoma, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        labels.forEach(function (lb) {
+          var q = projPt(lb.p); if (!q) return;
+          var w = ctx.measureText(lb.t).width + 10;
+          ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1;
+          ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(q[0] - w / 2, q[1] - 9, w, 18, 6); else ctx.rect(q[0] - w / 2, q[1] - 9, w, 18);
+          ctx.fill(); ctx.stroke();
+          ctx.fillStyle = '#1f2937'; ctx.fillText(lb.t, q[0], q[1] + 0.5);
+        });
+      }
+    }
+
+    // ---------- العروض ----------
+    function fitDist() { return B.span * 1.45; }
+    function setView(name) {
+      S.mode = 'orbit'; cam.tx = B.cx; cam.ty = B.cy; cam.tz = ch * 0.4; cam.dist = fitDist();
+      if (name === 'top') { cam.yaw = 0; cam.pitch = 1.55; cam.dist = fitDist() * 1.1; cam.tz = 0; }
+      else if (name === 'front') { cam.yaw = 0; cam.pitch = 0.06; }
+      else { cam.yaw = -0.65; cam.pitch = 0.5; }
+      draw();
+    }
+    function zoomBy(f) { if (S.mode === 'look') moveForward((1 - f) * B.span * 0.6); else cam.dist = cam.dist * f; draw(); }
+    function moveForward(mv) {
+      camSetup();
+      var ndx = F[0] * mv, ndy = F[1] * mv, ndz = F[2] * mv;
+      cam.tx += ndx; cam.ty += -ndy; cam.tz += ndz;
+    }
+    function setMode(m) {
+      if (m === S.mode) return;
+      camSetup();
+      if (m === 'look') {
+        S.mode = 'look'; var C = Cw.slice();
+        cam.dist = 150; cam.pitch = Math.min(cam.pitch, 1.2);
+        camSetup();
+        var T = [C[0] + F[0] * cam.dist, C[1] + F[1] * cam.dist, C[2] + F[2] * cam.dist];
+        cam.tx = T[0]; cam.ty = -T[1]; cam.tz = T[2];
+      } else { S.mode = 'orbit'; setView('iso'); return; }
+      draw();
+    }
+    function lookTo(dyaw, dpitch) {
+      camSetup(); var C = Cw.slice();
+      cam.yaw += dyaw; cam.pitch += dpitch;
+      cam.pitch = Math.max(-1.3, Math.min(1.3, cam.pitch));
+      camSetup();
+      var T = [C[0] + F[0] * cam.dist, C[1] + F[1] * cam.dist, C[2] + F[2] * cam.dist];
+      cam.tx = T[0]; cam.ty = -T[1]; cam.tz = T[2];
+    }
+
+    // ---------- اللمس ----------
+    var ptrs = {}, lastDist = 0, lastMid = null;
+    function keys() { return Object.keys(ptrs); }
+    cv.style.touchAction = 'none';
+    cv.addEventListener('pointerdown', function (e) {
+      try { cv.setPointerCapture(e.pointerId); } catch (x) {}
+      ptrs[e.pointerId] = { x: e.clientX, y: e.clientY, b: e.button };
+      var k = keys();
+      if (k.length === 2) {
+        var a = ptrs[k[0]], b = ptrs[k[1]];
+        lastDist = Math.hypot(a.x - b.x, a.y - b.y) || 1; lastMid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      }
     });
+    cv.addEventListener('pointermove', function (e) {
+      var p = ptrs[e.pointerId]; if (!p) return;
+      var dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
+      var k = keys();
+      if (k.length === 1) {
+        if (p.b === 2 || e.shiftKey) { panBy(dx, dy); }
+        else if (S.mode === 'look') { lookTo(dx * 0.006, dy * 0.006); }
+        else { cam.yaw -= dx * 0.008; cam.pitch -= dy * 0.006; } // اسحب لفوق = الكاميرا تطلع فوق
+      } else if (k.length >= 2) {
+        var a = ptrs[k[0]], b = ptrs[k[1]];
+        var dist = Math.hypot(a.x - b.x, a.y - b.y) || 1, mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+        if (S.mode === 'look') { moveForward((dist - lastDist) * B.span / 500); }
+        else { cam.dist *= lastDist / dist; }
+        if (lastMid) panBy(mid.x - lastMid.x, mid.y - lastMid.y);
+        lastDist = dist; lastMid = mid;
+      }
+      draw();
+    });
+    function panBy(dx, dy) {
+      camSetup();
+      var wpp = (S.mode === 'look' ? B.span / 700 : cam.dist / focal);
+      var T = [cam.tx, -cam.ty, cam.tz];
+      T[0] += -R[0] * dx * wpp + U[0] * dy * wpp;
+      T[1] += -R[1] * dx * wpp + U[1] * dy * wpp;
+      T[2] += -R[2] * dx * wpp + U[2] * dy * wpp;
+      cam.tx = T[0]; cam.ty = -T[1]; cam.tz = T[2];
+    }
+    function up(e) { delete ptrs[e.pointerId]; lastMid = null; }
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
+    cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    cv.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      if (S.mode === 'look') moveForward((e.deltaY < 0 ? 1 : -1) * B.span * 0.05); else cam.dist *= (e.deltaY < 0 ? 0.9 : 1.1);
+      draw();
+    }, { passive: false });
+    cv.addEventListener('dblclick', function () { setView('iso'); });
+    window.addEventListener('resize', function () { draw(); });
+
+    if (D0) { buildScene(D0); }
+    return {
+      setScene: function (d) { buildScene(d); setView('iso'); },
+      draw: draw, setView: setView, zoomBy: zoomBy, setMode: setMode,
+      toggleHide: function () { S.hide = !S.hide; draw(); return S.hide; },
+      toggleDims: function () { S.dims = !S.dims; draw(); return S.dims; },
+      getState: function () { return { hide: S.hide, dims: S.dims, mode: S.mode }; }
+    };
+  }
+
+
+  // ===== بيانات مشهد الـ 3D (مشتركة بين المعاينة جوه التطبيق وملف العميل) =====
+  function buildScene3D() {
+    const { segments } = computeWallGeometry();
+    const gasK = (el) => {
+      if (!el || el.type !== 'gas') return null;
+      const st = el.subType || '';
+      if (st.includes('عداد')) return 'meter';
+      if (st.includes('محبس')) return 'valve';
+      if (st.includes('رأسية')) return 'vpipe';
+      return 'hpipe';
+    };
+    return {
+      clientName: state.clientName || 'عميل',
+      ceilingHeight: parseFloat(state.ceilingHeight) || 285,
+      wallThickness: parseFloat(state.wallThickness) || 12,
+      notes: state.clientNotesList || [],
+      floorItems: (state.floorItems || []).map((f) => ({ x: f.x, y: f.y, d: f.d })),
+      segments: segments.map((sg) => ({
+        x1: sg.x1, y1: sg.y1, x2: sg.x2, y2: sg.y2, rad: sg.rad,
+        length: sg.wall.length, isBarWall: !!sg.wall.isBarWall, barHeight: parseFloat(sg.wall.barHeight) || 110,
+        elements: (sg.wall.elements || []).map((el) => ({
+          type: el.type, subType: el.subType || '', gk: gasK(el),
+          width: parseFloat(el.width), height: parseFloat(el.height), depth: parseFloat(el.depth), sill: parseFloat(el.sill) || 0,
+          leftCm: getElementLeftX(sg.wall.length, el)
+        }))
+      })),
+      spanBeams: (state.spanBeams || []).map((sb) => computeSpanBeamGeometry(sb, segments)).filter(Boolean)
+    };
+  }
+
+  const eng3D = cv3d ? hzEngine3D(cv3d, null, {}) : null;
+  function render3DScene() {
+    if (!eng3D || modal3D.classList.contains('hidden')) return;
+    eng3D.draw();
   }
 
   // Haptic Vibration Helper
@@ -6682,181 +6998,44 @@ end
     }
   }
 
+  // يربط أزرار صفحة العميل بالمحرك (بيتكتب جوه الملف نفسه)
+  function hzBoot(Eng, D) {
+    var cv = document.getElementById('cv');
+    var eng = Eng(cv, D, {});
+    function on(id, fn) { var e = document.getElementById(id); if (e) e.onclick = fn; }
+    var hide = true, dims = true, look = false;
+    on('vTop', function () { eng.setView('top'); });
+    on('vFront', function () { eng.setView('front'); });
+    on('v3d', function () { eng.setView('iso'); look = false; document.getElementById('vMode').textContent = '🚶 تجول'; });
+    on('vIn', function () { eng.zoomBy(0.8); });
+    on('vOut', function () { eng.zoomBy(1.25); });
+    on('vHide', function () { hide = eng.toggleHide(); document.getElementById('vHide').style.opacity = hide ? 1 : 0.55; });
+    on('vDims', function () { dims = eng.toggleDims(); document.getElementById('vDims').style.opacity = dims ? 1 : 0.55; });
+    on('vMode', function () { look = !look; eng.setMode(look ? 'look' : 'orbit'); document.getElementById('vMode').textContent = look ? '🔄 مدار' : '🚶 تجول'; });
+    var notes = document.getElementById('notes'), nb = document.getElementById('vNotes');
+    if (nb) nb.onclick = function () { notes.style.display = notes.style.display === 'block' ? 'none' : 'block'; };
+    eng.setScene(D);
+    window.addEventListener('orientationchange', function () { setTimeout(eng.draw, 300); });
+  }
+
   function exportStandalone3DHtmlToMobile() {
-    // Generates a 100% interactive rotatable 3D HTML file that works offline from any folder on the phone!
-    const { segments } = computeWallGeometry();
-    const sceneData = {
-      clientName: state.clientName || 'عميل',
-      ceilingHeight: parseFloat(state.ceilingHeight) || 285,
-      wallThickness: parseFloat(state.wallThickness) || 12,
-      notes: state.clientNotesList || [],
-      segments: segments.map((s) => ({
-        x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, rad: s.rad,
-        length: s.wall.length, isBarWall: !!s.wall.isBarWall, barHeight: s.wall.barHeight || 110,
-        elements: (s.wall.elements || []).map((el) => ({
-          type: el.type, width: el.width, height: el.height, depth: el.depth, sill: el.sill,
-          leftCm: getElementLeftX(s.wall.length, el)
-        }))
-      })),
-      spanBeams: (state.spanBeams || []).map((sb) => computeSpanBeamGeometry(sb, segments)).filter(Boolean)
-    };
-    // ===== عارض 3D مستقل (بيتكتب جوه ملف الـ HTML اللي بيروح للعميل) =====
-    function hzViewer3D(D) {
-      var cv = document.getElementById('cv'), ctx = cv.getContext('2d');
-      var cam = { yaw: -0.65, pitch: 0.52, zoom: 1, px: 0, py: 0 };
-      var showDims = true;
-      var dpr = Math.min(window.devicePixelRatio || 1, 2);
-      function shade(h, k) {
-        var n = parseInt(h.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
-        function c(v) { return Math.max(0, Math.min(255, Math.round(v * k))); }
-        return 'rgb(' + c(r) + ',' + c(g) + ',' + c(b) + ')';
-      }
-      var L = (function () { var x = -0.45, y = -0.55, z = 0.7, m = Math.sqrt(x * x + y * y + z * z); return [x / m, y / m, z / m]; })();
-      function draw() {
-        var r = cv.getBoundingClientRect(), W = r.width || 360, H = r.height || 400;
-        cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        var sky = ctx.createLinearGradient(0, 0, 0, H);
-        sky.addColorStop(0, '#b9d6f2'); sky.addColorStop(0.55, '#e9f1f9'); sky.addColorStop(1, '#f6f7f4');
-        ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
-        var minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
-        D.segments.forEach(function (s) {
-          minX = Math.min(minX, s.x1, s.x2); maxX = Math.max(maxX, s.x1, s.x2);
-          minY = Math.min(minY, s.y1, s.y2); maxY = Math.max(maxY, s.y1, s.y2);
-        });
-        if (!isFinite(minX)) { return; }
-        var cx = (minX + maxX) / 2, cy = (minY + maxY) / 2, ch = D.ceilingHeight || 285, cz = ch * 0.42;
-        var sc = (Math.min(W, H) * 0.7) / Math.max(250, maxX - minX, maxY - minY, ch) * cam.zoom;
-        var cY = Math.cos(cam.yaw), sY = Math.sin(cam.yaw), cP = Math.cos(cam.pitch), sP = Math.sin(cam.pitch);
-        function P(x, y, z) {
-          var dx = x - cx, dy = y - cy, dz = z - cz;
-          var rx = dx * cY - dy * sY, ry = dx * sY + dy * cY;
-          var rz = dz * cP - ry * sP, dp = ry * cP + dz * sP;
-          var ps = 1200 / Math.max(350, 1200 + dp * 0.85);
-          return { x: W / 2 + cam.px + rx * sc * ps, y: H / 2 + cam.py - rz * sc * ps, d: dp };
-        }
-        // الأرضية
-        var gm = 220, g = [[minX - gm, minY - gm], [maxX + gm, minY - gm], [maxX + gm, maxY + gm], [minX - gm, maxY + gm]].map(function (q) { return P(q[0], q[1], 0); });
-        ctx.beginPath(); ctx.moveTo(g[0].x, g[0].y); for (var gi = 1; gi < 4; gi++) ctx.lineTo(g[gi].x, g[gi].y); ctx.closePath();
-        ctx.fillStyle = '#dcdcd4'; ctx.fill(); ctx.strokeStyle = '#c4c4ba'; ctx.lineWidth = 1; ctx.stroke();
-
-        var polys = [];
-        function Q(pts, base, line) {
-          var a = pts[0], b = pts[1], c = pts[2];
-          var ux = b[0] - a[0], uy = b[1] - a[1], uz = b[2] - a[2], vx = c[0] - a[0], vy = c[1] - a[1], vz = c[2] - a[2];
-          var nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, m = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
-          var k = 0.6 + 0.4 * Math.abs((nx * L[0] + ny * L[1] + nz * L[2]) / m);
-          var pr = pts.map(function (p) { return P(p[0], p[1], p[2]); });
-          polys.push({ pr: pr, f: shade(base, k), s: line, d: pr.reduce(function (t, q) { return t + q.d; }, 0) / pr.length });
-        }
-        function B(o, u, v, w, d, h, topC, sideC, line) {
-          var p0 = o, p1 = [o[0] + u[0] * w, o[1] + u[1] * w, o[2]], p2 = [p1[0] + v[0] * d, p1[1] + v[1] * d, o[2]], p3 = [o[0] + v[0] * d, o[1] + v[1] * d, o[2]];
-          var q0 = [p0[0], p0[1], o[2] + h], q1 = [p1[0], p1[1], o[2] + h], q2 = [p2[0], p2[1], o[2] + h], q3 = [p3[0], p3[1], o[2] + h];
-          Q([p0, p1, q1, q0], sideC, line); Q([p3, p2, q2, q3], sideC, line);
-          Q([p0, p3, q3, q0], sideC, line); Q([p1, p2, q2, q1], sideC, line);
-          Q([q0, q1, q2, q3], topC, line);
-        }
-        var labels = [];
-        D.segments.forEach(function (s, si) {
-          var ux = Math.cos(s.rad), uy = Math.sin(s.rad), nx = -uy, ny = ux;
-          var wh = s.isBarWall ? s.barHeight : ch;
-          B([s.x1, s.y1, 0], [ux, uy], [-nx, -ny], s.length, D.wallThickness, wh, '#ffffff', s.isBarWall ? '#f9c7de' : '#f1eee6', '#4b5563');
-          labels.push({ x: s.x1 + ux * s.length / 2, y: s.y1 + uy * s.length / 2, z: wh + 6, t: 'ح' + (si + 1) + ' · ' + Math.round(s.length) + ' سم' });
-          s.elements.forEach(function (el) {
-            var sx = s.x1 + ux * el.leftCm, sy = s.y1 + uy * el.leftCm;
-            var ew = Math.max(8, el.width || 20), eh = Math.max(8, el.type === 'column' ? ch : (el.height || 20)), ed = Math.max(3, el.depth || 10);
-            var z0 = el.sill || 0;
-            if (el.type === 'door' || el.type === 'column') z0 = 0; else if (el.type === 'wall_beam') z0 = ch - eh;
-            var c = el.type === 'door' ? '#b4682a' : (el.type === 'window' ? '#7ec8f0' : (el.type === 'gas' ? '#f2c230' : (el.type === 'column' ? '#e7e2d6' : '#2bb7cc')));
-            B([sx, sy, z0], [ux, uy], [nx, ny], ew, ed, eh, c, c, '#1f2937');
-          });
-        });
-        (D.spanBeams || []).forEach(function (b) {
-          var nx = -b.dirY, ny = b.dirX;
-          B([b.pStartX - nx * b.width / 2, b.pStartY - ny * b.width / 2, ch - b.drop], [b.dirX, b.dirY], [nx, ny], b.actualLen, b.width, b.drop, '#fff7dd', '#f7e7b4', '#a16207');
-        });
-        polys.sort(function (a, b) { return b.d - a.d; });
-        ctx.lineJoin = 'round';
-        polys.forEach(function (p) {
-          ctx.fillStyle = p.f; ctx.strokeStyle = p.s; ctx.lineWidth = 1;
-          ctx.beginPath(); ctx.moveTo(p.pr[0].x, p.pr[0].y);
-          for (var i = 1; i < p.pr.length; i++) ctx.lineTo(p.pr[i].x, p.pr[i].y);
-          ctx.closePath(); ctx.fill(); ctx.stroke();
-        });
-        if (showDims) {
-          ctx.font = '700 11px system-ui, sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          labels.forEach(function (lb) {
-            var q = P(lb.x, lb.y, lb.z);
-            var w = ctx.measureText(lb.t).width + 10;
-            ctx.fillStyle = 'rgba(255,255,255,0.92)'; ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1;
-            ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(q.x - w / 2, q.y - 9, w, 18, 6); else ctx.rect(q.x - w / 2, q.y - 9, w, 18);
-            ctx.fill(); ctx.stroke();
-            ctx.fillStyle = '#1f2937'; ctx.fillText(lb.t, q.x, q.y + 0.5);
-          });
-        }
-      }
-      function setView(yaw, pitch) { cam.yaw = yaw; cam.pitch = pitch; cam.zoom = 1; cam.px = 0; cam.py = 0; draw(); }
-      document.getElementById('vTop').onclick = function () { setView(0, 1.5); };
-      document.getElementById('vFront').onclick = function () { setView(0, 0.05); };
-      document.getElementById('v3d').onclick = function () { setView(-0.65, 0.52); };
-      document.getElementById('vIn').onclick = function () { cam.zoom = Math.min(8, cam.zoom * 1.25); draw(); };
-      document.getElementById('vOut').onclick = function () { cam.zoom = Math.max(0.2, cam.zoom / 1.25); draw(); };
-      document.getElementById('vDims').onclick = function () { showDims = !showDims; draw(); };
-      var notes = document.getElementById('notes');
-      var nb = document.getElementById('vNotes');
-      if (nb) nb.onclick = function () { notes.style.display = notes.style.display === 'block' ? 'none' : 'block'; setTimeout(draw, 30); };
-
-      var ptrs = {}, lastDist = 0, lastMid = null;
-      function ids() { return Object.keys(ptrs); }
-      cv.addEventListener('pointerdown', function (e) {
-        try { cv.setPointerCapture(e.pointerId); } catch (x) {}
-        ptrs[e.pointerId] = { x: e.clientX, y: e.clientY, b: e.button };
-        var k = ids();
-        if (k.length === 2) {
-          var a = ptrs[k[0]], b = ptrs[k[1]];
-          lastDist = Math.hypot(a.x - b.x, a.y - b.y) || 1; lastMid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-        }
-      });
-      cv.addEventListener('pointermove', function (e) {
-        var p = ptrs[e.pointerId]; if (!p) return;
-        var dx = e.clientX - p.x, dy = e.clientY - p.y; p.x = e.clientX; p.y = e.clientY;
-        var k = ids();
-        if (k.length === 1) {
-          if (p.b === 2 || e.shiftKey) { cam.px += dx; cam.py += dy; }
-          else { cam.yaw += dx * 0.008; cam.pitch = Math.max(0.05, Math.min(1.5, cam.pitch + dy * 0.006)); }
-        } else if (k.length >= 2) {
-          var a = ptrs[k[0]], b = ptrs[k[1]];
-          var dist = Math.hypot(a.x - b.x, a.y - b.y) || 1, mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-          cam.zoom = Math.max(0.2, Math.min(8, cam.zoom * dist / lastDist));
-          if (lastMid) { cam.px += mid.x - lastMid.x; cam.py += mid.y - lastMid.y; }
-          lastDist = dist; lastMid = mid;
-        }
-        draw();
-      });
-      function up(e) { delete ptrs[e.pointerId]; lastMid = null; }
-      cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
-      cv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-      cv.addEventListener('wheel', function (e) { e.preventDefault(); cam.zoom = Math.max(0.2, Math.min(8, cam.zoom * (e.deltaY < 0 ? 1.1 : 0.9))); draw(); }, { passive: false });
-      cv.addEventListener('dblclick', function () { setView(-0.65, 0.52); });
-      window.addEventListener('resize', draw);
-      setTimeout(draw, 30);
-    }
-
+    // ملف HTML واحد بيشتغل أوفلاين على أي موبايل أو كمبيوتر
+    const sceneData = buildScene3D();
     const jsonScene = JSON.stringify(sceneData).replace(/</g, '\\u003c');
     const escHtml = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-    const notesHtml = (sceneData.notes || []).filter((n) => n && String(n).trim()).map((n, i) => '<div style="padding:6px 10px;background:#fff;border-radius:8px;margin-bottom:6px;border-right:3px solid #f59e0b"><b>' + (i + 1) + '.</b> ' + escHtml(n) + '</div>').join('');
-    const notesCount = (sceneData.notes || []).filter((n) => n && String(n).trim()).length;
+    const noteList = (sceneData.notes || []).filter((n) => n && String(n).trim());
+    const notesHtml = noteList.map((n, i) => '<div style="padding:6px 10px;background:#fff;border-radius:8px;margin-bottom:6px;border-right:3px solid #f59e0b"><b>' + (i + 1) + '.</b> ' + escHtml(n) + '</div>').join('');
     const css = '*{box-sizing:border-box}html,body{margin:0;height:100%}body{font-family:system-ui,-apple-system,"Segoe UI",Tahoma,sans-serif;background:#eef2f6;color:#1f2937;display:flex;flex-direction:column;overflow:hidden;-webkit-user-select:none;user-select:none}'
       + 'header{background:#1e293b;padding:max(8px,env(safe-area-inset-top)) 10px 8px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px;border-bottom:2px solid #f59e0b}'
-      + 'h2{margin:0;font-size:14px;color:#fbbf24}.btns{display:flex;flex-wrap:wrap;gap:4px}.btns button{background:#334155;color:#fff;border:1px solid #f59e0b;border-radius:8px;padding:6px 10px;font-weight:bold;font-size:12px;cursor:pointer}'
-      + '#wrap{flex:1;position:relative;overflow:hidden}canvas{position:absolute;inset:0;width:100%;height:100%;touch-action:none;cursor:grab}'
-      + '#notes{display:none;position:absolute;left:0;right:0;bottom:0;max-height:45%;overflow-y:auto;background:rgba(255,255,255,.96);border-top:2px solid #f59e0b;padding:10px 14px max(10px,env(safe-area-inset-bottom));font-size:13px;-webkit-user-select:text;user-select:text}'
-      + '#hint{position:absolute;left:8px;bottom:8px;font-size:11px;background:rgba(255,255,255,.85);padding:3px 8px;border-radius:8px;color:#475569;pointer-events:none}';
+      + 'h2{margin:0;font-size:14px;color:#fbbf24}.btns{display:flex;flex-wrap:wrap;gap:4px}.btns button{background:#334155;color:#fff;border:1px solid #f59e0b;border-radius:8px;padding:6px 9px;font-weight:bold;font-size:12px;cursor:pointer}'
+      + '#wrap{flex:1;position:relative;overflow:hidden;min-height:0}canvas{position:absolute;top:0;left:0;touch-action:none;cursor:grab}'
+      + '#notes{display:none;position:absolute;left:0;right:0;bottom:0;max-height:45%;overflow-y:auto;background:rgba(255,255,255,.96);border-top:2px solid #f59e0b;padding:10px 14px max(10px,env(safe-area-inset-bottom));font-size:13px;-webkit-user-select:text;user-select:text;z-index:3}'
+      + '#hint{position:absolute;right:8px;bottom:8px;font-size:11px;background:rgba(255,255,255,.88);padding:3px 8px;border-radius:8px;color:#475569;pointer-events:none}';
     const standalone = '<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover"><title>معاينة 3D - ' + escHtml(sceneData.clientName) + '</title><style>' + css + '</style></head><body>'
-      + '<header><h2>🧊 ' + escHtml(sceneData.clientName) + '</h2><div class="btns"><button id="vTop">علوي</button><button id="vFront">أمامي</button><button id="v3d">3D</button><button id="vIn">➕</button><button id="vOut">➖</button><button id="vDims">📏</button>'
-      + (notesCount ? '<button id="vNotes">📋 ملاحظات (' + notesCount + ')</button>' : '') + '</div></header>'
-      + '<div id="wrap"><canvas id="cv"></canvas><div id="hint">اسحب للدوران · اقرص للتكبير · اسحب بإصبعين للتحريك</div><div id="notes"><div style="color:#b45309;font-weight:bold;margin-bottom:6px">📋 ملاحظات العميل:</div>' + notesHtml + '</div></div>'
-      + '<script>(' + hzViewer3D.toString() + ')(' + jsonScene + ');<\/script></body></html>';
+      + '<header><h2>🧊 ' + escHtml(sceneData.clientName) + '</h2><div class="btns"><button id="vTop">علوي</button><button id="vFront">أمامي</button><button id="v3d">3D</button><button id="vIn">➕</button><button id="vOut">➖</button><button id="vHide">🧱 إخفاء الأمامي</button><button id="vDims">📏</button><button id="vMode">🚶 تجول</button>'
+      + (noteList.length ? '<button id="vNotes">📋 ملاحظات (' + noteList.length + ')</button>' : '') + '</div></header>'
+      + '<div id="wrap"><canvas id="cv"></canvas><div id="hint">إصبع: دوران · إصبعين: تحريك وتكبير</div><div id="notes"><div style="color:#b45309;font-weight:bold;margin-bottom:6px">📋 ملاحظات العميل:</div>' + notesHtml + '</div></div>'
+      + '<script>(' + hzBoot.toString() + ')(' + hzEngine3D.toString() + ',' + jsonScene + ');<\/script></body></html>';
     const fname = `معاينة_3D_${(state.clientName || 'عميل').replace(/\s+/g, '_')}.html`;
     if (window.openSmartSaveDialog) {
       window.openSmartSaveDialog(fname, standalone, 'text/html;charset=utf-8', 'ملف 3D تفاعلي للموبايل (.html)');
@@ -6871,10 +7050,7 @@ end
     if (mode3D === 'off') return;
     if (mode3D === 'export') {
       // Directly export 3D file to mobile without opening in-app viewer if user selected 'export' only in Settings
-      modal3D.classList.remove('hidden');
-      render3DScene();
       exportStandalone3DHtmlToMobile();
-      modal3D.classList.add('hidden');
       return;
     }
     document.getElementById('lbl3DClientName').textContent = state.clientName || '';
@@ -6887,47 +7063,38 @@ end
     }
     modal3D.classList.remove('hidden');
     modal3D.classList.add('flex');
-    setTimeout(render3DScene, 40);
+    setTimeout(() => { if (eng3D) { eng3D.setScene(buildScene3D()); } }, 40);
   });
   document.getElementById('btnClose3DViewer')?.addEventListener('click', () => {
     modal3D.classList.add('hidden');
     modal3D.classList.remove('flex');
   });
-  document.getElementById('btn3DViewTop')?.addEventListener('click', () => {
-    cam3D.pitch = 1.35; cam3D.yaw = 0; render3DScene();
+  document.getElementById('btn3DViewTop')?.addEventListener('click', () => { eng3D && eng3D.setView('top'); });
+  document.getElementById('btn3DViewCorner')?.addEventListener('click', () => { eng3D && eng3D.setView('iso'); });
+  document.getElementById('btn3DZoomIn')?.addEventListener('click', () => { eng3D && eng3D.zoomBy(0.8); });
+  document.getElementById('btn3DZoomOut')?.addEventListener('click', () => { eng3D && eng3D.zoomBy(1.25); });
+  document.getElementById('btn3DReset')?.addEventListener('click', () => {
+    if (!eng3D) return;
+    eng3D.setView('iso');
+    const m = document.getElementById('btn3DMode'); if (m) m.textContent = '🚶 وضع التجول';
   });
-  document.getElementById('btn3DViewCorner')?.addEventListener('click', () => {
-    cam3D.pitch = 0.52; cam3D.yaw = -0.65; cam3D.zoom = 1.0; render3DScene();
+  document.getElementById('btn3DHide')?.addEventListener('click', (e) => {
+    if (!eng3D) return;
+    const on = eng3D.toggleHide();
+    e.currentTarget.textContent = '🧱 إخفاء الحيطة اللي قدامي: ' + (on ? 'شغال' : 'مقفول');
+    e.currentTarget.className = 'pointer-events-auto px-2 py-1 rounded-xl text-[11px] font-black shadow ' + (on ? 'bg-amber-500 text-slate-950' : 'bg-white/90 text-slate-800 border');
   });
-  document.getElementById('btn3DZoomIn')?.addEventListener('click', () => {
-    cam3D.zoom = Math.min(2.5, cam3D.zoom + 0.2); render3DScene();
+  document.getElementById('btn3DDims')?.addEventListener('click', (e) => {
+    if (!eng3D) return;
+    const on = eng3D.toggleDims();
+    e.currentTarget.textContent = '📏 المقاسات: ' + (on ? 'شغال' : 'مقفول');
   });
-  document.getElementById('btn3DZoomOut')?.addEventListener('click', () => {
-    cam3D.zoom = Math.max(0.5, cam3D.zoom - 0.2); render3DScene();
+  document.getElementById('btn3DMode')?.addEventListener('click', (e) => {
+    if (!eng3D) return;
+    const look = eng3D.getState().mode === 'look';
+    eng3D.setMode(look ? 'orbit' : 'look');
+    e.currentTarget.textContent = look ? '🚶 وضع التجول' : '🔄 وضع الدوران';
   });
-
-  if (cv3d) {
-    cv3d.addEventListener('pointerdown', (e) => {
-      cam3D.dragging = true;
-      cam3D.lx = e.clientX;
-      cam3D.ly = e.clientY;
-      try { cv3d.setPointerCapture(e.pointerId); } catch (err) {}
-    });
-    cv3d.addEventListener('pointermove', (e) => {
-      if (!cam3D.dragging) return;
-      const dx = e.clientX - cam3D.lx;
-      const dy = e.clientY - cam3D.ly;
-      cam3D.lx = e.clientX;
-      cam3D.ly = e.clientY;
-      cam3D.yaw += dx * 0.01;
-      cam3D.pitch = Math.max(0.15, Math.min(1.45, cam3D.pitch + dy * 0.008));
-      render3DScene();
-    });
-    const stop3DDrag = () => { cam3D.dragging = false; };
-    cv3d.addEventListener('pointerup', stop3DDrag);
-    cv3d.addEventListener('pointercancel', stop3DDrag);
-  }
-
 
   // 8. Smart Folder Picker, Save-As Dialog, Mobile Share to Files, and In-App Export Vault
   let chosenDirHandle = null;
