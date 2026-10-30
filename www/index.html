@@ -366,6 +366,7 @@
         <div id="canvasTopHintBar" class="absolute top-2 left-1/2 -translate-x-1/2 z-20 pointer-events-auto flex items-center gap-1.5 px-3 py-1 rounded-full glass-float border shadow-lg text-[11px] font-extrabold max-w-[94vw] whitespace-nowrap overflow-x-auto custom-scroll">
           <span id="canvasHintText">👆 المس أي عنصر للتحكم به أو اضغط ➕ لإدراج عنصر</span>
           <button id="btnCancelActiveTool" type="button" class="hidden px-2 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black">إلغاء الوضع ✕</button>
+          <button id="btnTogglePlanBar" type="button" class="hidden px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black whitespace-nowrap">🧰 أدوات الكمر ▲</button>
         </div>
 
         <!-- Plan-View Floating Beam Helper Bar (Smart Beam Control + Connect to Specific Wall) -->
@@ -2000,7 +2001,12 @@
 
       const planBar = document.getElementById('planBeamQuickBar');
       if (planBar) {
-        planBar.classList.toggle('hidden', state.previewMode !== 'plan');
+        planBar.classList.toggle('hidden', state.previewMode !== 'plan' || window.__planBarCollapsed === true);
+      }
+      const tgl = document.getElementById('btnTogglePlanBar');
+      if (tgl) {
+        tgl.classList.toggle('hidden', state.previewMode !== 'plan');
+        tgl.textContent = window.__planBarCollapsed ? '🧰 أدوات الكمر ▼' : '🧰 أدوات الكمر ▲';
       }
 
       renderWallTabs();
@@ -2608,25 +2614,51 @@
       ctx.restore();
     }
 
+    // يقيس القوائم الظاهرة فعلاً فوق الرسمة (فوق / تحت / يمين) عشان الرسمة تاخد باقي المساحة بس
+    function getCanvasInsets(W, H) {
+      const out = { top: 0, bottom: 0, left: 0, right: 0 };
+      try {
+        const cv = document.getElementById('previewCanvas');
+        const r = cv.getBoundingClientRect();
+        if (!r.width || !r.height) return out;
+        const sx = W / r.width, sy = H / r.height;
+        const vis = (el) => el && !el.classList.contains('hidden') && el.offsetWidth > 0 && el.offsetHeight > 0;
+        ['canvasTopHintBar', 'planBeamQuickBar'].forEach((id) => {
+          const el = document.getElementById(id);
+          if (vis(el)) out.top = Math.max(out.top, (el.getBoundingClientRect().bottom - r.top) * sy + 6);
+        });
+        const hud = document.getElementById('floatingSelectionHUD');
+        if (vis(hud)) out.bottom = Math.max(out.bottom, (r.bottom - hud.getBoundingClientRect().top) * sy + 8);
+        const pop = document.getElementById('floatingToolsPopover');
+        if (vis(pop) && W >= 700) out.right = Math.max(out.right, (r.right - pop.getBoundingClientRect().left) * sx + 10);
+        // سقف للتأثير: القوائم ما تاخدش أكتر من كده من الرسمة
+        out.top = Math.min(out.top, H * 0.30);
+        out.bottom = Math.min(out.bottom, H * 0.38);
+        out.right = Math.min(out.right, W * 0.36);
+      } catch (e) {}
+      return out;
+    }
+
     function drawRealisticElevationView(ctx, W, H) {
       const w = state.walls[state.activeWallIndex];
       if (!w) return;
       const { segments } = computeWallGeometry();
 
-      const hudEl = document.getElementById('floatingSelectionHUD');
-      const hudOpen = hudEl && !hudEl.classList.contains('hidden');
+      const ins = getCanvasInsets(W, H);
       const padX = Math.max(12, Math.min(22, W * 0.022));
-      const padTop = 30;
-      const padBottom = hudOpen ? 162 : 52; // Shift wall higher when bottom HUD is open so it never covers the wall!
+      const padTop = Math.max(30, ins.top + 16);
+      const padBottom = Math.max(52, ins.bottom); // الرسمة بتكبر/تصغر حسب القوائم المفتوحة فعلاً
+      const availW = W - ins.left - ins.right;
+      const cxAvail = ins.left + availW / 2;
       const wallW = Math.max(60, w.length);
       const ceilH = Math.max(180, state.ceilingHeight);
-      const baseScale = Math.min((W - padX * 2) / wallW, (H - padTop - padBottom) / ceilH);
+      const baseScale = Math.min((availW - padX * 2) / wallW, (H - padTop - padBottom) / ceilH);
       const zoomFactor = (state.settings && state.settings.enableZoom) ? (state.canvasZoom || 1) : 1;
       const scale = baseScale * zoomFactor;
 
       const drawW = wallW * scale;
       const drawCeilH = ceilH * scale;
-      const startX = (W - drawW) / 2;
+      const startX = cxAvail - drawW / 2;
       // Anchor wall near the top so bottom menu never hides the lower part of the wall
       const startY = padTop + Math.max(0, (H - padTop - padBottom - drawCeilH) * 0.08);
       const floorY = startY + drawCeilH;
@@ -2646,7 +2678,7 @@
       ctx.fillStyle = state.isLightMode ? '#0f172a' : '#f8fafc';
       ctx.font = '900 12px Cairo, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`واجهة حائط #${state.activeWallIndex + 1} (${w.length} سم × ارتفاع ${state.ceilingHeight} سم)`, W / 2, startY - 9);
+      ctx.fillText(`واجهة حائط #${state.activeWallIndex + 1} (${w.length} سم × ارتفاع ${state.ceilingHeight} سم)`, cxAvail, startY - 9);
 
       // Interactive Left & Right Wall Navigation Buttons below the wall
       const nWalls = state.walls.length;
@@ -3123,14 +3155,16 @@
         maxY = Math.max(maxY, s.y1, s.y2);
       });
 
+      const ins = getCanvasInsets(W, H);
       const padX = Math.max(36, Math.min(64, W * 0.08));
-      const padTop = 86;
-      const padBottom = 125;
+      const padTop = Math.max(50, ins.top + 14);
+      const padBottom = Math.max(80, ins.bottom);
+      const availW = W - ins.left - ins.right;
       const spanX = Math.max(100, maxX - minX);
       const spanY = Math.max(100, maxY - minY);
-      const scale = Math.min((W - padX * 2) / spanX, (H - padTop - padBottom) / spanY);
+      const scale = Math.min((availW - padX * 2) / spanX, (H - padTop - padBottom) / spanY);
 
-      const offsetX = (W - spanX * scale) / 2 - minX * scale;
+      const offsetX = ins.left + (availW - spanX * scale) / 2 - minX * scale;
       const offsetY = padTop + (H - padTop - padBottom - spanY * scale) / 2 - minY * scale;
       const toScreen = (x, y) => [offsetX + x * scale, offsetY + y * scale];
       const toModel = (sx, sy) => [(sx - offsetX) / scale, (sy - offsetY) / scale];
@@ -3344,7 +3378,8 @@
 
       // 3. Draw Side Text Sheet of Client Notes right beside the Plan (الصفحة النصية للملاحظات جنب البلان)
       const notesArr = (state.clientNotesList || []).filter((n) => n && n.trim());
-      if (notesArr.length > 0) {
+      const SHOW_NOTES_IN_PLAN = false; // الملاحظات مش بتظهر في المسقط الأفقي
+      if (SHOW_NOTES_IN_PLAN && notesArr.length > 0) {
         ctx.save();
         ctx.font = '800 11px Cairo, sans-serif';
         const maxNoteW = Math.max(
@@ -5233,6 +5268,26 @@ end
       });
 
       window.addEventListener('resize', () => renderCanvas());
+
+      // فتح/قفل شريط أدوات الكمر
+      try { window.__planBarCollapsed = localStorage.getItem('hz_planbar_collapsed') === '1'; } catch (e) { window.__planBarCollapsed = false; }
+      document.getElementById('btnTogglePlanBar').addEventListener('click', () => {
+        window.__planBarCollapsed = !window.__planBarCollapsed;
+        try { localStorage.setItem('hz_planbar_collapsed', window.__planBarCollapsed ? '1' : '0'); } catch (e) {}
+        syncUI();
+      });
+
+      // أي قايمة تتفتح/تتقفل/يتغير حجمها => الرسمة تكبر أو تصغر لوحدها
+      let rzQueued = false;
+      const ro = new ResizeObserver(() => {
+        if (rzQueued) return;
+        rzQueued = true;
+        requestAnimationFrame(() => { rzQueued = false; renderCanvas(); });
+      });
+      ['canvasTopHintBar', 'planBeamQuickBar', 'floatingSelectionHUD', 'floatingToolsPopover'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) ro.observe(el);
+      });
     }
 
     window.addEventListener('load', () => {
