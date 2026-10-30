@@ -843,6 +843,61 @@
   <canvas id="magnifierCanvas" width="120" height="120" class="hidden fixed pointer-events-none z-50 rounded-full border-4 border-amber-400 shadow-2xl bg-slate-950"></canvas>
 
   
+  
+  <!-- SMART SAVE-AS & FOLDER PICKER MODAL (نافذة اختيار الفولدر وحفظ الملفات على الموبايل) -->
+  <div id="saveFilePickerModal" class="fixed inset-0 bg-slate-950/85 backdrop-blur-sm z-[9994] hidden items-center justify-center p-3">
+    <div class="theme-card border-2 border-amber-500 rounded-3xl max-w-md w-full p-4 shadow-2xl space-y-3">
+      <div class="flex items-center justify-between border-b border-slate-700/40 pb-2">
+        <div>
+          <h3 class="text-sm sm:text-base font-black text-amber-400">📁 اختيار مكان وفولدر حفظ الملف</h3>
+          <p class="text-[11px] opacity-75">حدد الطريقة المناسبة لموبايلك لاختيار الفولدر وحفظ الملف فيه مباشرة</p>
+        </div>
+        <button id="btnCloseSavePickerModal" type="button" class="text-xs px-2.5 py-1 rounded-xl theme-sub border font-bold">✕</button>
+      </div>
+
+      <div class="theme-sub border rounded-2xl p-2.5 space-y-1.5 text-xs">
+        <label for="inpSavePickerFileName" class="block text-[11px] font-bold text-amber-400">اسم الملف قبل الحفظ:</label>
+        <input id="inpSavePickerFileName" type="text" class="w-full theme-input border border-amber-500/60 rounded-xl px-2.5 py-1.5 text-xs font-black" dir="ltr">
+        <div id="lblSelectedFolderBadge" class="text-[10px] font-bold text-emerald-400 pt-0.5">📍 الفولدر الحالي: لم يتم ربط فولدر ثابت بعد (سيتم سؤالك عن المكان)</div>
+      </div>
+
+      <div class="space-y-2">
+        <!-- Option 1: Pick Exact Folder / Save As Dialog (File System Access API) -->
+        <button id="btnSaveViaFolderPicker" type="button" class="w-full py-2.5 px-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-black shadow-lg flex items-center justify-between transition">
+          <span class="flex items-center gap-2">
+            <span class="text-base">📁</span>
+            <span>اختيار الفولدر بنفسي وحفظ الملف بداخله</span>
+          </span>
+          <span class="text-[10px] bg-slate-950/20 px-2 py-0.5 rounded-lg font-extrabold">موصى به</span>
+        </button>
+
+        <!-- Option 2: Native Mobile File Manager / Share Sheet (Android & iOS Save to Files / WhatsApp) -->
+        <button id="btnSaveViaMobileShare" type="button" class="w-full py-2.5 px-3 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow-lg flex items-center justify-between transition">
+          <span class="flex items-center gap-2">
+            <span class="text-base">📲</span>
+            <span>حفظ عبر مدير ملفات الموبايل / إرسال واتساب</span>
+          </span>
+          <span class="text-[10px] bg-slate-950/20 px-2 py-0.5 rounded-lg font-extrabold">للموبايل</span>
+        </button>
+
+        <!-- Option 3: Standard Browser Download -->
+        <button id="btnSaveViaDirectDownload" type="button" class="w-full py-2 px-3 rounded-2xl theme-sub border hover:border-sky-400 text-xs font-extrabold flex items-center justify-between transition">
+          <span class="flex items-center gap-2">
+            <span class="text-base">⬇️</span>
+            <span>تنزيل مباشر سريع (مجلد Download)</span>
+          </span>
+          <span class="text-[10px] opacity-75">تقليدي</span>
+        </button>
+      </div>
+
+      <!-- Saved In-App Vault List (نسخة محفوظة دائماً داخل التطبيق للرجوع إليها فوراً حتى لو لم تجدها في الداونلود) -->
+      <div class="pt-2 border-t border-slate-700/40">
+        <div class="text-[11px] font-black text-sky-400 mb-1.5">🗄️ آخر الملفات المحفوظة داخل خزنة التطبيق (تفتح بضغطة زر):</div>
+        <div id="inAppSavedFilesVaultList" class="max-h-32 overflow-y-auto custom-scroll space-y-1 text-[11px]"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- IN-PAGE DELETE CONFIRMATION MODAL (عند تفعيل خيار تأكيد قبل الحذف) -->
   <div id="deleteConfirmModal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-[9992] hidden items-center justify-center p-4">
     <div class="theme-card border-2 border-rose-500 rounded-3xl max-w-xs w-full p-4 shadow-2xl text-center space-y-3">
@@ -1110,6 +1165,20 @@
             <option value="60">دقيقة واحدة</option>
             <option value="120">دقيقتين</option>
           </select>
+        </div>
+      </div>
+
+      <!-- 8b. Default Save Folder on Mobile (اختيار الفولدر بنفسي لحفظ ملفات الـ 3D والنسخ الاحتياطية) -->
+      <div class="theme-sub border border-amber-500/40 rounded-2xl p-3 space-y-2">
+        <div class="text-xs font-black text-amber-400">📁 مكان وفولدر حفظ الملفات على الموبايل:</div>
+        <p id="lblSettingsFolderStatus" class="text-[10px] opacity-80">الوضع الحالي: فتح نافذة اختيار الفولدر عند كل حفظ لتحدد المكان بنفسك.</p>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="btnSettingsPickFolder" type="button" class="py-1.5 px-2 rounded-xl bg-amber-500 text-slate-950 text-[11px] font-black shadow">
+            📁 اختيار فولدر ثابت الآن
+          </button>
+          <button id="btnSettingsOpenVault" type="button" class="py-1.5 px-2 rounded-xl theme-card border text-[11px] font-bold hover:border-amber-400">
+            🗄️ خزنة الملفات المصدرة
+          </button>
         </div>
       </div>
 
@@ -5144,26 +5213,14 @@ end
 
       document.getElementById('btnDownloadRuby').addEventListener('click', () => {
         const code = generateSketchUpRubyScript();
-        const blob = new Blob([code], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${(state.clientName || 'Client').replace(/\s+/g, '_')}_Realistic3D_SketchUp.rb`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        const fname = `${(state.clientName || 'Client').replace(/\s+/g, '_')}_Realistic3D_SketchUp.rb`;
+        if (window.openSmartSaveDialog) window.openSmartSaveDialog(fname, code, 'text/plain;charset=utf-8', 'ملف SketchUp 3D (.rb)');
       });
 
       document.getElementById('btnDownloadDXF').addEventListener('click', () => {
         const dxf = generateDXFContent();
-        const blob = new Blob([dxf], { type: 'application/dxf;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${(state.clientName || 'Client').replace(/\s+/g, '_')}_Plan.dxf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        const fname = `${(state.clientName || 'Client').replace(/\s+/g, '_')}_Plan.dxf`;
+        if (window.openSmartSaveDialog) window.openSmartSaveDialog(fname, dxf, 'application/dxf;charset=utf-8', 'ملف أوتوكاد (.DXF)');
       });
 
       window.addEventListener('resize', () => renderCanvas());
@@ -6452,7 +6509,7 @@ end
     persistSettings(); restartAutoSaveTimer();
   });
 
-  // Export Mobile Backup File (.json) directly to phone storage
+  // Export Mobile Backup File (.json) via Smart Folder Picker
   document.getElementById('btnExportMobileBackup')?.addEventListener('click', () => {
     autoSaveCurrentClientSilent();
     const plans = getSavedPlans();
@@ -6462,15 +6519,11 @@ end
       currentClientName: state.clientName,
       plans: plans
     };
-    const blob = new Blob([JSON.stringify(backupPayload, null, 2)], { type: 'application/json;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `نسخة_احتياطية_عملاء_الحافظ_${new Date().toISOString().slice(0, 10)}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    showAppToast('تم تصدير ملف النسخة الاحتياطية على الموبايل بنجاح 📲', 'ok');
+    const fname = `نسخة_احتياطية_عملاء_الحافظ_${new Date().toISOString().slice(0, 10)}.json`;
+    const jsonContent = JSON.stringify(backupPayload, null, 2);
+    if (window.openSmartSaveDialog) {
+      window.openSmartSaveDialog(fname, jsonContent, 'application/json;charset=utf-8', 'نسخة احتياطية للعملاء (.json)');
+    }
   });
 
   // Import Mobile Backup File (.json) from phone storage and immediately load/prioritize it
@@ -6552,31 +6605,37 @@ end
       const wh = seg.wall.isBarWall ? (parseFloat(seg.wall.barHeight) || 110) : ceilH;
       addBoxObj(`Wall_${i+1}`, seg.x1, seg.y1, 0, ux, uy, -nx, -ny, seg.wall.length, wThick, wh);
     });
-    const blob = new Blob([obj], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${(state.clientName || 'Client').replace(/\s+/g, '_')}_3D_Model.obj`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    showAppToast('تم تحميل ملف المجسم ثلاثي الأبعاد (.OBJ) على الموبايل 📦', 'ok');
+    const fname = `${(state.clientName || 'Client').replace(/\s+/g, '_')}_3D_Model.obj`;
+    if (window.openSmartSaveDialog) {
+      window.openSmartSaveDialog(fname, obj, 'text/plain;charset=utf-8', 'مجسم ثلاثي الأبعاد (.OBJ)');
+    }
   }
 
   function exportStandalone3DHtmlToMobile() {
-    render3DScene();
-    const dataUrl = cv3d ? cv3d.toDataURL('image/png') : '';
-    const notesHtml = (state.clientNotesList || []).map((n, i) => `<li><strong>${i + 1}.</strong> ${n}</li>`).join('');
-    const standalone = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>معاينة 3D - ${state.clientName}</title><style>body{font-family:sans-serif;background:#0f172a;color:#f8fafc;margin:0;padding:16px;text-align:center}img{max-width:100%;border-radius:16px;border:2px solid #f59e0b}ul{text-align:right;max-width:500px;margin:16px auto;background:#1e293b;padding:16px 28px;border-radius:12px}</style></head><body><h2>🧊 معاينة بلان 3D: ${state.clientName}</h2><img src="${dataUrl}" alt="3D Plan"><h3>📋 ملاحظات العميل:</h3><ul>${notesHtml || '<li>لا توجد ملاحظات</li>'}</ul></body></html>`;
-    const blob = new Blob([standalone], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `معاينة_3D_${(state.clientName || 'عميل').replace(/\s+/g, '_')}.html`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    showAppToast('تم تصدير ملف معاينة 3D للموبايل بنجاح 📲', 'ok');
+    // Generates a 100% interactive rotatable 3D HTML file that works offline from any folder on the phone!
+    const { segments } = computeWallGeometry();
+    const sceneData = {
+      clientName: state.clientName || 'عميل',
+      ceilingHeight: parseFloat(state.ceilingHeight) || 285,
+      wallThickness: parseFloat(state.wallThickness) || 12,
+      notes: state.clientNotesList || [],
+      segments: segments.map((s) => ({
+        x1: s.x1, y1: s.y1, x2: s.x2, y2: s.y2, rad: s.rad,
+        length: s.wall.length, isBarWall: !!s.wall.isBarWall, barHeight: s.wall.barHeight || 110,
+        elements: (s.wall.elements || []).map((el) => ({
+          type: el.type, width: el.width, height: el.height, depth: el.depth, sill: el.sill,
+          leftCm: getElementLeftX(s.wall.length, el)
+        }))
+      })),
+      spanBeams: (state.spanBeams || []).map((sb) => computeSpanBeamGeometry(sb, segments)).filter(Boolean)
+    };
+    const jsonScene = JSON.stringify(sceneData);
+    const notesHtml = (sceneData.notes || []).map((n, i) => `<div style="padding:6px 10px;background:#0f172a;border-radius:8px;margin-bottom:6px;border-right:3px solid #f59e0b"><b>${i + 1}.</b> ${n}</div>`).join('');
+    const standalone = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><title>معاينة 3D تفاعلية - ${sceneData.clientName}</title><style>*{box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#060911;color:#f8fafc;margin:0;height:100dvh;display:flex;flex-direction:column;overflow:hidden}header{background:#1e293b;padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid #f59e0b}h2{margin:0;font-size:15px;color:#fbbf24}.btns button{background:#334155;color:#fff;border:1px solid #f59e0b;border-radius:8px;padding:5px 10px;font-weight:bold;margin-right:4px;cursor:pointer}#wrap{flex:1;display:flex;flex-direction:column;overflow:hidden}canvas{flex:1;width:100%;height:100%;touch-action:none;cursor:grab}#notes{background:#1e293b;padding:10px 14px;max-height:28dvh;overflow-y:auto;border-top:1px solid #334155;font-size:13px}</style></head><body><header><h2>🧊 بلان 3D تفاعلي: ${sceneData.clientName}</h2><div class="btns"><button onclick="cam.pitch=1.35;cam.yaw=0;draw()">علوي</button><button onclick="cam.pitch=0.52;cam.yaw=-0.65;cam.zoom=1;draw()">3D</button><button onclick="cam.zoom*=1.2;draw()">➕</button><button onclick="cam.zoom/=1.2;draw()">➖</button></div></header><div id="wrap"><canvas id="cv"></canvas><div id="notes"><div style="color:#fbbf24;font-weight:bold;margin-bottom:6px">📋 ملاحظات العميل:</div>${notesHtml || '<div>لا توجد ملاحظات مسجلة</div>'}</div></div><script>const D=${jsonScene},cv=document.getElementById('cv'),ctx=cv.getContext('2d');let cam={yaw:-0.65,pitch:0.52,zoom:1,drag:false,lx:0,ly:0};function draw(){const r=cv.getBoundingClientRect();cv.width=r.width||360;cv.height=r.height||400;const W=cv.width,H=cv.height;ctx.fillStyle='#060911';ctx.fillRect(0,0,W,H);let minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;D.segments.forEach(s=>{minX=Math.min(minX,s.x1,s.x2);maxX=Math.max(maxX,s.x1,s.x2);minY=Math.min(minY,s.y1,s.y2);maxY=Math.max(maxY,s.y1,s.y2)});const cx=(minX+maxX)/2,cy=(minY+maxY)/2,ch=D.ceilingHeight||285,cz=ch*0.42,sc=(Math.min(W,H)*0.68)/Math.max(250,maxX-minX,maxY-minY,ch)*cam.zoom,cY=Math.cos(cam.yaw),sY=Math.sin(cam.yaw),cP=Math.cos(cam.pitch),sP=Math.sin(cam.pitch);function P(x,y,z){const dx=x-cx,dy=y-cy,dz=z-cz,rx=dx*cY-dy*sY,ry=dx*sY+dy*cY,rz=dz*cP-ry*sP,dp=ry*cP+dz*sP,ps=1200/Math.max(350,1200+dp*0.85);return{x:W/2+rx*sc*ps,y:H/2-rz*sc*ps,d:dp}}const polys=[];function Q(pts,f,s){const pr=pts.map(p=>P(p[0],p[1],p[2]));polys.push({pr,f,s,d:pr.reduce((a,b)=>a+b.d,0)/pr.length})}function B(o,u,v,w,d,h,ft,fs,st){const p0=o,p1=[o[0]+u[0]*w,o[1]+u[1]*w,o[2]],p2=[p1[0]+v[0]*d,p1[1]+v[1]*d,o[2]],p3=[o[0]+v[0]*d,o[1]+v[1]*d,o[2]],q0=[p0[0],p0[1],o[2]+h],q1=[p1[0],p1[1],o[2]+h],q2=[p2[0],p2[1],o[2]+h],q3=[p3[0],p3[1],o[2]+h];Q([p0,p1,q1,q0],fs,st);Q([p3,p2,q2,q3],fs,st);Q([p0,p3,q3,q0],fs,st);Q([p1,p2,q2,q1],fs,st);Q([q0,q1,q2,q3],ft,st)}D.segments.forEach(s=>{const ux=Math.cos(s.rad),uy=Math.sin(s.rad),nx=-uy,ny=ux,wh=s.isBarWall?s.barHeight:ch;B([s.x1,s.y1,0],[ux,uy],[-nx,-ny],s.length,D.wallThickness,wh,'#f8fafc',s.isBarWall?'#fbcfe8':'#e2e8f0','#334155');s.elements.forEach(el=>{const sx=s.x1+ux*el.leftCm,sy=s.y1+uy*el.leftCm,ew=Math.max(8,el.width||20),eh=Math.max(8,el.type==='column'?ch:(el.height||20)),ed=Math.max(3,el.depth||10);let z0=el.sill||0;if(el.type==='door'||el.type==='column')z0=0;else if(el.type==='wall_beam')z0=ch-eh;const c=el.type==='door'?'#b45309':(el.type==='window'?'#38bdf8':(el.type==='gas'?'#facc15':'#22d3ee'));B([sx,sy,z0],[ux,uy],[nx,ny],ew,ed,eh,c,c,'#0f172a')})});D.spanBeams.forEach(g=>{const nx=-g.dirY,ny=g.dirX;B([g.pStartX-nx*g.width/2,g.pStartY-ny*g.width/2,ch-g.drop],[g.dirX,g.dirY],[nx,ny],g.actualLen,g.width,g.drop,'#fef3c7','#fde68a','#d97706')});polys.sort((a,b)=>b.d-a.d);polys.forEach(p=>{ctx.fillStyle=p.f;ctx.strokeStyle=p.s;ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(p.pr[0].x,p.pr[0].y);for(let i=1;i<p.pr.length;i++)ctx.lineTo(p.pr[i].x,p.pr[i].y);ctx.closePath();ctx.fill();ctx.stroke()})}cv.onpointerdown=e=>{cam.drag=true;cam.lx=e.clientX;cam.ly=e.clientY;cv.setPointerCapture(e.pointerId)};cv.onpointermove=e=>{if(!cam.drag)return;cam.yaw+=(e.clientX-cam.lx)*0.01;cam.pitch=Math.max(0.15,Math.min(1.45,cam.pitch+(e.clientY-cam.ly)*0.008));cam.lx=e.clientX;cam.ly=e.clientY;draw()};cv.onpointerup=()=>cam.drag=false;window.onresize=draw;setTimeout(draw,50);<\/script></body></html>`;
+    const fname = `معاينة_3D_${(state.clientName || 'عميل').replace(/\s+/g, '_')}.html`;
+    if (window.openSmartSaveDialog) {
+      window.openSmartSaveDialog(fname, standalone, 'text/html;charset=utf-8', 'ملف 3D تفاعلي للموبايل (.html)');
+    }
   }
 
   document.getElementById('btnExport3DMobileFile')?.addEventListener('click', exportStandalone3DHtmlToMobile);
@@ -6643,6 +6702,230 @@ end
     cv3d.addEventListener('pointerup', stop3DDrag);
     cv3d.addEventListener('pointercancel', stop3DDrag);
   }
+
+
+  // 8. Smart Folder Picker, Save-As Dialog, Mobile Share to Files, and In-App Export Vault
+  let chosenDirHandle = null;
+  let pendingSaveItem = null; // { filename, content, mimeType, kindLabel }
+  const VAULT_STORAGE_KEY = 'hz_exported_files_vault_v1';
+
+  function getVaultFiles() {
+    try {
+      return JSON.parse(localStorage.getItem(VAULT_STORAGE_KEY) || '[]');
+    } catch (e) { return []; }
+  }
+  function saveToVault(filename, content, mimeType, kindLabel) {
+    try {
+      const list = getVaultFiles().filter((f) => f.filename !== filename);
+      list.unshift({
+        id: Date.now(),
+        filename,
+        content,
+        mimeType,
+        kindLabel: kindLabel || 'ملف مصدر',
+        savedAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
+      });
+      if (list.length > 8) list.length = 8;
+      localStorage.setItem(VAULT_STORAGE_KEY, JSON.stringify(list));
+    } catch (e) {}
+  }
+
+  function renderVaultList() {
+    const el = document.getElementById('inAppSavedFilesVaultList');
+    if (!el) return;
+    const list = getVaultFiles();
+    if (!list.length) {
+      el.innerHTML = `<div class="opacity-60 text-center py-2">لا توجد ملفات محفوظة في الخزنة بعد.</div>`;
+      return;
+    }
+    el.innerHTML = '';
+    list.forEach((item) => {
+      const row = document.createElement('div');
+      row.className = 'flex items-center justify-between gap-1.5 p-1.5 rounded-xl theme-sub border';
+      row.innerHTML = `
+        <div class="truncate flex-1">
+          <span class="font-black text-amber-400">${item.filename}</span>
+          <span class="opacity-70 text-[10px]"> (${item.savedAt})</span>
+        </div>
+        <div class="flex items-center gap-1 shrink-0">
+          <button type="button" data-vault-share="${item.id}" class="px-2 py-0.5 rounded-lg bg-emerald-500 text-slate-950 font-black text-[10px]">📲 مشاركة/حفظ</button>
+          <button type="button" data-vault-dl="${item.id}" class="px-2 py-0.5 rounded-lg bg-amber-500 text-slate-950 font-black text-[10px]">⬇️</button>
+        </div>
+      `;
+      row.querySelector('[data-vault-share]').addEventListener('click', () => {
+        pendingSaveItem = item;
+        triggerMobileShareOrSave(item.filename, item.content, item.mimeType);
+      });
+      row.querySelector('[data-vault-dl]').addEventListener('click', () => {
+        triggerDirectBrowserDownload(item.filename, item.content, item.mimeType);
+      });
+      el.appendChild(row);
+    });
+  }
+
+  function updateFolderBadges() {
+    const b1 = document.getElementById('lblSelectedFolderBadge');
+    const b2 = document.getElementById('lblSettingsFolderStatus');
+    if (chosenDirHandle) {
+      const txt = `✅ الفولدر المحدد حالياً: "${chosenDirHandle.name}" (يتم الحفظ بداخله مباشرة)`;
+      if (b1) b1.textContent = txt;
+      if (b2) b2.textContent = txt;
+    } else {
+      if (b1) b1.textContent = '📍 اضغط "اختيار الفولدر بنفسي" أو "حفظ عبر مدير ملفات الموبايل" لتحديد المكان';
+    }
+  }
+
+  async function saveIntoDirectoryHandle(dirHandle, filename, content, mimeType) {
+    const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+    const writable = await fileHandle.createWritable();
+    const blob = new Blob([content], { type: mimeType || 'text/plain;charset=utf-8' });
+    await writable.write(blob);
+    await writable.close();
+  }
+
+  async function triggerFolderOrFilePicker(filename, content, mimeType) {
+    // 1. If user already picked a folder during this session, try saving right into it or let them pick a folder!
+    if (window.showDirectoryPicker) {
+      try {
+        if (!chosenDirHandle) {
+          chosenDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+          updateFolderBadges();
+        }
+        await saveIntoDirectoryHandle(chosenDirHandle, filename, content, mimeType);
+        showAppToast(`✅ تم حفظ الملف "${filename}" داخل فولدر "${chosenDirHandle.name}" بنجاح!`, 'ok');
+        closeSavePickerModal();
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+        chosenDirHandle = null;
+      }
+    }
+    // 2. Fallback to window.showSaveFilePicker (opens OS "Save As" folder & filename dialog)
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: filename
+        });
+        const writable = await handle.createWritable();
+        const blob = new Blob([content], { type: mimeType || 'text/plain;charset=utf-8' });
+        await writable.write(blob);
+        await writable.close();
+        showAppToast(`✅ تم حفظ "${filename}" في الفولدر الذي اخترته بنجاح!`, 'ok');
+        closeSavePickerModal();
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+    }
+    // 3. On mobile browsers where File System API isn't exposed, use Native Share Sheet ("Save to Files / Copy to...")
+    await triggerMobileShareOrSave(filename, content, mimeType);
+  }
+
+  async function triggerMobileShareOrSave(filename, content, mimeType) {
+    try {
+      const cleanMime = (mimeType || 'text/plain').split(';')[0];
+      const file = new File([content], filename, { type: cleanMime });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: filename,
+          text: `ملف معاينة عميل: ${state.clientName || ''}`,
+          files: [file]
+        });
+        showAppToast('✅ تم فتح قائمة الحفظ والمشاركة على الموبايل!', 'ok');
+        closeSavePickerModal();
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === 'AbortError') return;
+    }
+    // Fallback to direct download
+    triggerDirectBrowserDownload(filename, content, mimeType);
+  }
+
+  function triggerDirectBrowserDownload(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType || 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 400);
+    showAppToast(`⬇️ تم بدء تنزيل "${filename}" (ومحفوظ أيضاً في خزنة التطبيق)`, 'ok');
+    closeSavePickerModal();
+  }
+
+  const savePickerModal = document.getElementById('saveFilePickerModal');
+  function closeSavePickerModal() {
+    if (savePickerModal) {
+      savePickerModal.classList.add('hidden');
+      savePickerModal.classList.remove('flex');
+    }
+  }
+
+  window.openSmartSaveDialog = function (filename, content, mimeType, kindLabel) {
+    saveToVault(filename, content, mimeType, kindLabel);
+    pendingSaveItem = { filename, content, mimeType, kindLabel };
+    const inpName = document.getElementById('inpSavePickerFileName');
+    if (inpName) inpName.value = filename;
+    updateFolderBadges();
+    renderVaultList();
+    if (savePickerModal) {
+      savePickerModal.classList.remove('hidden');
+      savePickerModal.classList.add('flex');
+    }
+  };
+
+  document.getElementById('btnCloseSavePickerModal')?.addEventListener('click', closeSavePickerModal);
+
+  document.getElementById('btnSaveViaFolderPicker')?.addEventListener('click', () => {
+    if (!pendingSaveItem) return;
+    const customName = (document.getElementById('inpSavePickerFileName')?.value || pendingSaveItem.filename).trim();
+    triggerFolderOrFilePicker(customName, pendingSaveItem.content, pendingSaveItem.mimeType);
+  });
+
+  document.getElementById('btnSaveViaMobileShare')?.addEventListener('click', () => {
+    if (!pendingSaveItem) return;
+    const customName = (document.getElementById('inpSavePickerFileName')?.value || pendingSaveItem.filename).trim();
+    triggerMobileShareOrSave(customName, pendingSaveItem.content, pendingSaveItem.mimeType);
+  });
+
+  document.getElementById('btnSaveViaDirectDownload')?.addEventListener('click', () => {
+    if (!pendingSaveItem) return;
+    const customName = (document.getElementById('inpSavePickerFileName')?.value || pendingSaveItem.filename).trim();
+    triggerDirectBrowserDownload(customName, pendingSaveItem.content, pendingSaveItem.mimeType);
+  });
+
+  document.getElementById('btnSettingsPickFolder')?.addEventListener('click', async () => {
+    if (window.showDirectoryPicker) {
+      try {
+        chosenDirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        updateFolderBadges();
+        showAppToast(`✅ تم ربط الفولدر "${chosenDirHandle.name}" لحفظ جميع الملفات بداخله!`, 'ok');
+      } catch (err) {
+        if (err && err.name !== 'AbortError') showAppToast('متصفحك الحالي يفتح اختيار الفولدر عند حفظ كل ملف', 'warn');
+      }
+    } else {
+      showAppToast('عند الضغط على حفظ أي ملف ستظهر لك نافذة اختيار الفولدر أو مدير ملفات الموبايل 📁', 'ok');
+    }
+  });
+
+  document.getElementById('btnSettingsOpenVault')?.addEventListener('click', () => {
+    document.getElementById('settingsModal')?.classList.add('hidden');
+    document.getElementById('settingsModal')?.classList.remove('flex');
+    const list = getVaultFiles();
+    const first = list[0] || { filename: `معاينة_3D_${(state.clientName || 'عميل').replace(/\s+/g, '_')}.html`, content: '', mimeType: 'text/html' };
+    pendingSaveItem = first;
+    const inpName = document.getElementById('inpSavePickerFileName');
+    if (inpName) inpName.value = first.filename;
+    updateFolderBadges();
+    renderVaultList();
+    savePickerModal?.classList.remove('hidden');
+    savePickerModal?.classList.add('flex');
+  });
 
   window.addEventListener('load', () => {
     applySettingsToUI();
