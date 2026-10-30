@@ -90,7 +90,16 @@
   <style>
     html,body{overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
     input,textarea{-webkit-user-select:text;user-select:text}
-    header{padding-top:max(.375rem,env(safe-area-inset-top))}
+    header{padding-top:max(.375rem,env(safe-area-inset-top));max-height:62dvh;overflow-y:auto;overflow-x:hidden}
+    #hdrActions>button{flex-shrink:0}
+    @media (max-width:640px){
+      #hdrProj{width:100%}
+      #hdrProj button{flex:1;justify-content:center}
+      #hdrActions{width:100%;overflow-x:auto;flex-wrap:nowrap;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+      #hdrActions::-webkit-scrollbar{display:none}
+      #btnOpenExportModal [data-i18n="btnSketchup"]{font-size:10px}
+      #activeWallEditor{max-width:100%}
+    }
     #hzSplash{position:fixed;inset:0;z-index:9998;background:#1b110a;overflow:hidden;transition:opacity .8s}
     #hzSplash .im{position:absolute;inset:0;background:url(splash.jpg) center/cover no-repeat;transform:scale(.15);opacity:0;transition:filter 1s}
     #hzSplash.go .im{animation:hzZoom 2s cubic-bezier(.25,.6,.25,1) forwards}
@@ -177,9 +186,9 @@
   <!-- ========================================================================= -->
   <header class="theme-card border-b z-30 px-2 py-1.5 shadow-md shrink-0">
     <!-- Row 1: Projection Switcher (أفقي / رأسي) + Wall Quick Settings + SketchUp Export + More Menu -->
-    <div class="flex items-center justify-between gap-1.5">
+    <div id="hdrRow1" class="flex flex-wrap items-center justify-between gap-1.5">
       <!-- Projection Switcher (مسقط رأسي vs مسقط أفقي) -->
-      <div class="flex items-center gap-1 bg-slate-950/30 p-0.5 rounded-xl border border-slate-700/40">
+      <div id="hdrProj" class="flex items-center gap-1 bg-slate-950/30 p-0.5 rounded-xl border border-slate-700/40">
         <button id="btnViewElevation" type="button" class="px-2.5 py-1.5 rounded-lg text-[11px] sm:text-xs font-black bg-amber-500 text-slate-950 shadow transition flex items-center gap-1 whitespace-nowrap">
           واجهة الحائط الحالي
         </button>
@@ -189,7 +198,7 @@
       </div>
 
       <!-- Quick Right Actions: Wall Settings Popover + Lock All + Export SketchUp + Menu -->
-      <div class="flex items-center gap-1">
+      <div id="hdrActions" class="flex items-center gap-1">
         <button id="btnToggleWallConfig" type="button" class="px-2 py-1.5 rounded-xl theme-sub border text-[11px] font-extrabold hover:border-amber-500 transition flex items-center gap-1 whitespace-nowrap" title="إعدادات وطول وزاوية الحائط الحالي">
           <span>📏</span>
           <span id="lblTopWallQuick">ح#1: 360سم</span>
