@@ -1,0 +1,7 @@
+{
+  "appId": "com.hafez.kitchen",
+  "appName": "شركة الحافظ للمطابخ الألومنيوم والخشب وجميع أعمال الأخشاب والواجهات الزجاجية",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "plugins": { "CapacitorHttp": { "enabled": true } }
+}
