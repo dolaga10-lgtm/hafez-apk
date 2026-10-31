@@ -4029,7 +4029,12 @@ end
     // سطر واحد ASCII فقط: بيتلصق في Ruby Console من غير مشاكل أسطر أو عربي
     function buildLoaderLine(code) {
       const b64 = btoa(unescape(encodeURIComponent(code)));
-      return `begin; eval("${b64}".unpack('m')[0].force_encoding('UTF-8')); rescue Exception => e; UI.messagebox('Error: ' + e.message); end`;
+      // كونسول SketchUp بيقطع الأسطر الطويلة جداً، فبنقسم الـ base64 لأسطر قصيرة (ASCII فقط)
+      const CHUNK = 900;
+      const parts = [];
+      for (let k = 0; k < b64.length; k += CHUNK) parts.push(b64.slice(k, k + CHUNK));
+      const body = parts.map(p => `__s << "${p}"`).join('\n');
+      return `begin\n__s = String.new\n${body}\neval(__s.unpack('m')[0].force_encoding('UTF-8'))\nrescue Exception => e\nUI.messagebox('Error: ' + e.message)\nend`;
     }
 
     function generateDXFContent() {
