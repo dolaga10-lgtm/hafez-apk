@@ -897,6 +897,10 @@
           <span class="text-[10px] bg-slate-950/20 px-2 py-0.5 rounded-lg font-extrabold">للموبايل</span>
         </button>
 
+        <button id="btnSaveViaWhatsApp" type="button" class="w-full py-2.5 px-3 rounded-2xl bg-green-600 hover:bg-green-500 text-white text-xs font-black shadow-lg flex items-center justify-between transition">
+          <span class="flex items-center gap-2"><span class="text-base">💬</span><span>إرسال على واتساب باسم العميل</span></span>
+        </button>
+
         <!-- Option 3: Standard Browser Download -->
         <button id="btnSaveViaDirectDownload" type="button" class="w-full py-2 px-3 rounded-2xl theme-sub border hover:border-sky-400 text-xs font-extrabold flex items-center justify-between transition">
           <span class="flex items-center gap-2">
@@ -1301,6 +1305,10 @@
           <span class="text-[11px] font-normal opacity-90">للاستيراد عبر File &gt; Import</span>
         </button>
       </div>
+
+      <button id="btnShareRubyWA" type="button" class="w-full mb-3 p-3 rounded-xl bg-green-600 hover:bg-green-500 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md transition">
+        <span class="text-base">💬 مشاركة كود SketchUp على واتساب باسم العميل</span>
+      </button>
 
       <div id="copyToast" class="hidden mb-3 px-3 py-2 rounded-xl bg-emerald-950 border border-emerald-600 text-emerald-300 text-xs font-bold text-center">
         ✓ تم نسخ الكود! افتح SketchUp &gt; Window &gt; Ruby Console واضغط Ctrl+V ثم Enter!
@@ -2623,6 +2631,7 @@
       const bw = Math.max(...lines.map((t) => ctx.measureText(t).width)) + 20, bh = lines.length * 21 + 12;
       let bx = Math.min(W - bw - 8, Math.max(8, dragCursor.cx - bw / 2));
       let by = Math.max(46, dragCursor.cy - bh - 26);
+      try { const pp = window.hzPlaceDragBox && window.hzPlaceDragBox(bw, bh, W, H); if (pp) { bx = pp.x; by = pp.y; } } catch (err) {}
       ctx.fillStyle = 'rgba(15,23,42,0.95)'; ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.roundRect(bx, by, bw, bh, 10); ctx.fill(); ctx.stroke();
       ctx.fillStyle = '#fbbf24'; ctx.textAlign = 'right';
@@ -3073,11 +3082,33 @@
         if (isSelected || showAllDims) {
           ctx.save();
           if (isSelected) {
-            ctx.strokeStyle = el.locked ? '#f43f5e' : '#d97706';
-            ctx.lineWidth = 3;
-            ctx.setLineDash([5, 3]);
-            ctx.strokeRect(ex - 5, ey - 5, ew + 10, eh + 10);
-            ctx.setLineDash([]);
+            const ts = window.hzTouchState ? window.hzTouchState(el, w, ceilH) : null;
+            if (ts) {
+              const tcol = ts.kind === 'overlap' ? '#ef4444' : '#22c55e';
+              ctx.fillStyle = ts.kind === 'overlap' ? 'rgba(239,68,68,0.18)' : 'rgba(34,197,94,0.20)';
+              ctx.fillRect(ex - 5, ey - 5, ew + 10, eh + 10);
+              ctx.strokeStyle = tcol;
+              ctx.lineWidth = 4.5;
+              ctx.shadowColor = tcol;
+              ctx.shadowBlur = 10;
+              ctx.strokeRect(ex - 5, ey - 5, ew + 10, eh + 10);
+              ctx.shadowBlur = 0;
+              ctx.font = '900 11px Cairo, sans-serif';
+              const tmsg = (ts.kind === 'overlap' ? '⛔ داخل في: ' : '✅ لامس: ') + elLabel(ts.other);
+              const tbw = Math.ceil(ctx.measureText(tmsg).width + 16);
+              const tbx = Math.max(4, Math.min(W - tbw - 4, ex + ew / 2 - tbw / 2));
+              const tby = Math.max(startY + 2, ey - 5 - 24);
+              ctx.fillStyle = tcol;
+              ctx.beginPath(); ctx.roundRect(tbx, tby, tbw, 20, 6); ctx.fill();
+              ctx.fillStyle = '#ffffff'; ctx.textAlign = 'center';
+              ctx.fillText(tmsg, tbx + tbw / 2, tby + 14);
+            } else {
+              ctx.strokeStyle = el.locked ? '#f43f5e' : '#d97706';
+              ctx.lineWidth = 3;
+              ctx.setLineDash([5, 3]);
+              ctx.strokeRect(ex - 5, ey - 5, ew + 10, eh + 10);
+              ctx.setLineDash([]);
+            }
           }
 
           const isMm = state.settings && state.settings.unit === 'mm';
@@ -4001,7 +4032,7 @@ end
           document.getElementById('fabIcon').textContent = '➕';
           if (k === 'drain') {
             switchProjectionMode('plan'); setTool('drain');
-            document.getElementById('canvasHintText').textContent = '⭕ المس مكان البلاعة على أرضية المسقط الأفقي (اضبطها بالأسهم السفلية)';
+            document.getElementById('canvasHintText').textContent = '⭕ المس مكان البلاعة، وبعدها اسحبها من النقطة الجانبية (أو اضبطها بالأسهم السفلية) — بيظهر لك بعدها عن الحيطتين';
             return;
           }
           if (state.previewMode !== 'elevation') switchProjectionMode('elevation');
@@ -4689,7 +4720,7 @@ end
           renderWallElementsList();
           renderFloatingHUD();
           renderCanvas();
-          if (window.updateMagnifierLoupe) window.updateMagnifierLoupe(e, cx, cy);
+          if (window.updateMagnifierLoupe) window.updateMagnifierLoupe(e, cx + (dragState.loupeDX || 0), cy + (dragState.loupeDY || 0));
 
         } else if (dragState.mode === 'spanBeamElevation' && lastElevationScale) {
           const dxCm = (cx - dragState.startX) / lastElevationScale.scale;
@@ -5271,6 +5302,10 @@ end
         document.getElementById('copyToast').classList.remove('hidden');
       });
 
+      document.getElementById('btnShareRubyWA').addEventListener('click', () => {
+        window.shareToWhatsAppByClient(generateSketchUpRubyScript(), '.rb', 'text/plain');
+      });
+
       document.getElementById('btnDownloadRuby').addEventListener('click', () => {
         const code = generateSketchUpRubyScript();
         const fname = `${(state.clientName || 'Client').replace(/\s+/g, '_')}_Realistic3D_SketchUp.rb`;
@@ -5322,11 +5357,171 @@ end
   const _rc = renderCanvas;
   renderCanvas = function () { _rc(); try { extDraw(); } catch (e) {} };
 
-  function extDraw() {
-    if (state.previewMode !== 'plan' || !lastPlanScale) return;
-    const ctx = cv.getContext('2d'), P = lastPlanScale;
+  // ============ أدوات مساعدة ============
+  const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const isMmUnit = () => !!(state.settings && state.settings.unit === 'mm');
+  const fmtLen = (cm) => {
+    const v = isMmUnit() ? cm * 10 : cm, r = Math.round(v * 10) / 10;
+    return (Number.isInteger(r) ? r : r.toFixed(1)) + (isMmUnit() ? ' مم' : ' سم');
+  };
+  const canvasXY = (e) => {
+    const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]) || e, r = cv.getBoundingClientRect();
+    return { cx: (t.clientX - r.left) * cv.width / r.width, cy: (t.clientY - r.top) * cv.height / r.height };
+  };
+  let lastTouchT = 0, elevHandle = null, dd = null, ddRaf = false;
+
+  // ============ لمس قطعة تانية (تغيير لون الإطار) ============
+  window.hzTouchState = function (el, w, ceilH) {
+    const rectOf = (e) => {
+      const L = getElementLeftX(w.length, e), wd = parseFloat(e.width) || 0, ht = parseFloat(e.height) || 0, sill = parseFloat(e.sill) || 0;
+      let y0 = sill, y1 = sill + ht;
+      if (e.type === 'door') { y0 = 0; y1 = ht; }
+      else if (e.type === 'column') { y0 = 0; y1 = ceilH; }
+      else if (e.type === 'wall_beam') { y1 = ceilH; y0 = ceilH - ht; }
+      return { x0: L, x1: L + wd, y0, y1 };
+    };
+    const a = rectOf(el), eps = 0.3; let res = null;
+    for (const o of w.elements) {
+      if (o === el || o.id === el.id) continue;
+      const b = rectOf(o);
+      const ix = Math.min(a.x1, b.x1) - Math.max(a.x0, b.x0), iy = Math.min(a.y1, b.y1) - Math.max(a.y0, b.y0);
+      if (ix < -eps || iy < -eps) continue;
+      const kind = (ix > eps && iy > eps) ? 'overlap' : 'touch';
+      if (!res || (kind === 'overlap' && res.kind !== 'overlap')) res = { kind, other: o };
+    }
+    return res;
+  };
+
+  // ============ مكان مربع الأبعاد الأسود: بعيد عن القطعة وعن الصباع ============
+  window.hzPlaceDragBox = function (bw, bh, W, H) {
+    if (!dragState || !dragCursor) return null;
+    let tr = null;
+    canvasHitBoxes.forEach((b) => {
+      const mine = (dragState.el && b.kind === 'wallElement' && b.elementId === dragState.el.id) || (dragState.sb && b.spanBeamId === dragState.sb.id);
+      if (!mine) return;
+      tr = tr ? { x0: Math.min(tr.x0, b.x), y0: Math.min(tr.y0, b.y), x1: Math.max(tr.x1, b.x + b.w), y1: Math.max(tr.y1, b.y + b.h) }
+              : { x0: b.x, y0: b.y, x1: b.x + b.w, y1: b.y + b.h };
+    });
+    if (!tr) return null;
+    tr = { x0: tr.x0 - 10, y0: tr.y0 - 10, x1: tr.x1 + 10, y1: tr.y1 + 10 };
+    const ins = getCanvasInsets(W, H), topY = Math.max(46, ins.top + 4), botY = Math.max(topY, H - bh - Math.max(ins.bottom, 10) - 6);
+    const cxT = (tr.x0 + tr.x1) / 2, midY = clampN((tr.y0 + tr.y1) / 2 - bh / 2, topY, botY);
+    const clampX = (x) => clampN(x, 8, Math.max(8, W - bw - 8));
+    const cands = [
+      { x: clampX(cxT - bw / 2), y: tr.y0 - bh - 4 }, { x: clampX(cxT - bw / 2), y: tr.y1 + 4 },
+      { x: clampX(cxT - bw / 2), y: topY }, { x: clampX(cxT - bw / 2), y: botY },
+      { x: clampX(tr.x0 - bw - 4), y: midY }, { x: clampX(tr.x1 + 4), y: midY }
+    ];
+    const avoid = [{ r: tr, k: 6 }, { r: { x0: dragCursor.cx - 48, y0: dragCursor.cy - 48, x1: dragCursor.cx + 48, y1: dragCursor.cy + 48 }, k: 3 }];
+    if (elevHandle) avoid.push({ r: { x0: elevHandle.x - 30, y0: elevHandle.y - 30, x1: elevHandle.x + 30, y1: elevHandle.y + 30 }, k: 3 });
+    let best = null, bs = Infinity;
+    for (const c of cands) {
+      c.y = clampN(c.y, 46, Math.max(46, H - bh - 6));
+      let sc = 0;
+      avoid.forEach(({ r, k }) => {
+        const ox = Math.min(c.x + bw, r.x1) - Math.max(c.x, r.x0), oy = Math.min(c.y + bh, r.y1) - Math.max(c.y, r.y0);
+        if (ox > 0 && oy > 0) sc += ox * oy * k;
+      });
+      if (sc < bs) { bs = sc; best = c; }
+      if (sc === 0) break;
+    }
+    return best;
+  };
+
+  // ============ مقبض السحب البعيد للقطع (واجهة الحائط) ============
+  function computeElevHandle(W, H) {
+    elevHandle = null;
+    if (state.previewMode !== 'elevation' || !lastElevationScale || state.tool || state.activeSelectionKind !== 'element') return;
+    if (dragState && !dragState.viaHandle) return;
+    const el = getSelectedElement(); if (!el || el.locked) return;
+    const hb = canvasHitBoxes.find((b) => b.kind === 'wallElement' && b.elementId === el.id); if (!hb) return;
+    const ex = hb.x + 6, ey = hb.y + 6, ew = hb.w - 12, eh = hb.h - 12, ecx = ex + ew / 2, ecy = ey + eh / 2;
+    let hx, hy;
+    if (dragState && dragState.viaHandle && dragState.el === el && dragCursor) { hx = dragCursor.cx; hy = dragCursor.cy; }
+    else {
+      const R = 18, D = 58, ins = getCanvasInsets(W, H);
+      const minY = Math.max(52, ins.top + 6) + R, maxY = H - Math.max(ins.bottom, 14) - R - 4, minX = R + 6, maxX = W - ins.right - R - 6;
+      const cands = [[ecx, ey + eh + D], [ecx, ey - D], [ex + ew + D, ecy], [ex - D, ecy]];
+      let pick = cands.find(([x, y]) => x >= minX && x <= maxX && y >= minY && y <= maxY);
+      if (!pick) pick = cands[0];
+      hx = clampN(pick[0], minX, maxX); hy = clampN(pick[1], minY, maxY);
+    }
+    elevHandle = { x: hx, y: hy, el, ex, ey, ew, eh, ecx, ecy };
+  }
+  function drawHandleGlyph(ctx, hx, hy, active) {
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,.45)'; ctx.shadowBlur = 8;
+    ctx.fillStyle = active ? '#fb923c' : '#f59e0b'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.arc(hx, hy, 18, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    ctx.shadowBlur = 0; ctx.strokeStyle = '#0f172a'; ctx.fillStyle = '#0f172a'; ctx.lineWidth = 2;
+    const a = 9, t = 4;
+    ctx.beginPath(); ctx.moveTo(hx - a, hy); ctx.lineTo(hx + a, hy); ctx.moveTo(hx, hy - a); ctx.lineTo(hx, hy + a); ctx.stroke();
+    [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([dx, dy]) => {
+      const tx = hx + dx * a, ty = hy + dy * a;
+      ctx.beginPath(); ctx.moveTo(tx + dx * t, ty + dy * t); ctx.lineTo(tx - dy * t, ty + dx * t); ctx.lineTo(tx + dy * t, ty - dx * t); ctx.closePath(); ctx.fill();
+    });
+    ctx.restore();
+  }
+  function drawElevHandle(ctx, W, H) {
+    computeElevHandle(W, H);
+    const h = elevHandle; if (!h) return;
+    ctx.save();
+    const px = clampN(h.x, h.ex, h.ex + h.ew), py = clampN(h.y, h.ey, h.ey + h.eh);
+    ctx.strokeStyle = 'rgba(245,158,11,.95)'; ctx.lineWidth = 2.5; ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(h.x, h.y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = '#f59e0b'; ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+    drawHandleGlyph(ctx, h.x, h.y, !!(dragState && dragState.viaHandle));
+  }
+
+  // ============ البلاعة: رسم + أبعاد من الحيطتين + مقبض ============
+  function drainGeom(f) {
+    const P = lastPlanScale, [sx, sy] = P.toScreen(f.x, f.y);
+    return { sx, sy, r: Math.max(7, (f.d / 2) * P.scale) };
+  }
+  function drainHandlePos(f, W, H) {
+    const P = lastPlanScale, g = drainGeom(f), [mx, my] = P.toScreen(P.roomMidX, P.roomMidY);
+    let dx = mx - g.sx, dy = my - g.sy; const L = Math.hypot(dx, dy);
+    if (L < 14) { dx = 0.7071; dy = 0.7071; } else { dx /= L; dy /= L; }
+    const D = g.r + 52;
+    const hx = clampN(g.sx + dx * D, 26, W - 26), hy = clampN(g.sy + dy * D, 58, H - 60);
+    return { hx, hy, delx: clampN(hx - dy * 46, 22, W - 22), dely: clampN(hy + dx * 46, 54, H - 56) };
+  }
+  function drawDrainDims(ctx, P, f) {
+    const g = drainGeom(f);
+    const items = P.segments.map((seg) => ({ seg, c: closestPointOnSegment(f.x, f.y, seg.x1, seg.y1, seg.x2, seg.y2) })).sort((a, b) => a.c.dist - b.c.dist);
+    if (!items.length) return;
+    const first = items[0], second = items.slice(1).find((it) => Math.abs(Math.sin(it.seg.rad - first.seg.rad)) > 0.35);
+    const [mx, my] = P.toScreen(P.roomMidX, P.roomMidY);
+    [first, second].filter(Boolean).forEach(({ seg, c }) => {
+      const [fx, fy] = P.toScreen(c.x, c.y), len = Math.hypot(fx - g.sx, fy - g.sy);
+      ctx.save();
+      ctx.strokeStyle = '#06b6d4'; ctx.lineWidth = 2.2;
+      if (len > 3) {
+        ctx.beginPath(); ctx.moveTo(g.sx, g.sy); ctx.lineTo(fx, fy); ctx.stroke();
+        const ux = (fx - g.sx) / len, uy = (fy - g.sy) / len;
+        ctx.beginPath(); ctx.moveTo(fx - uy * 7, fy + ux * 7); ctx.lineTo(fx + uy * 7, fy - ux * 7); ctx.stroke();
+      }
+      let ox = 0, oy = 0;
+      if (len > 3) {
+        const ux = (fx - g.sx) / len, uy = (fy - g.sy) / len; let nx = -uy, ny = ux;
+        const midx = (fx + g.sx) / 2, midy = (fy + g.sy) / 2;
+        if (nx * (mx - midx) + ny * (my - midy) < 0) { nx = -nx; ny = -ny; }
+        ox = nx * 20; oy = ny * 20;
+      } else { oy = -22; }
+      const txt = `${fmtLen(c.dist)} من حائط ${seg.index + 1}`;
+      ctx.font = '900 12px Cairo, sans-serif'; ctx.direction = 'rtl'; ctx.textAlign = 'center';
+      const tw = Math.ceil(ctx.measureText(txt).width + 16);
+      const px = clampN((fx + g.sx) / 2 + ox, tw / 2 + 4, cv.width - tw / 2 - 4), py = clampN((fy + g.sy) / 2 + oy, 50, cv.height - 40);
+      ctx.fillStyle = '#0e7490'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.roundRect(px - tw / 2, py - 11, tw, 22, 7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#ffffff'; ctx.fillText(txt, px, py + 4.5);
+      ctx.restore();
+    });
+  }
+  function drawDrains(ctx, P, W, H) {
     state.floorItems.forEach((f) => {
-      const [sx, sy] = P.toScreen(f.x, f.y), r = Math.max(7, (f.d / 2) * P.scale);
+      const { sx, sy, r } = drainGeom(f);
       ctx.save();
       ctx.fillStyle = 'rgba(6,182,212,.35)'; ctx.strokeStyle = f.id === state.selDrain ? '#f59e0b' : '#0891b2'; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(sx, sy, r, 0, 7); ctx.fill(); ctx.stroke();
@@ -5336,6 +5531,33 @@ end
       ctx.fillText('بلاعة أرضية', sx + r + 24, sy - r - 20);
       ctx.restore();
     });
+    const f = state.floorItems.find((x) => x.id === state.selDrain);
+    if (!f) return;
+    drawDrainDims(ctx, P, f);
+    const g = drainGeom(f), hp = drainHandlePos(f, W, H), viaH = dd && dd.f === f && dd.via === 'handle' && dd.cur;
+    const hx = viaH ? dd.cur.cx : hp.hx, hy = viaH ? dd.cur.cy : hp.hy;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(245,158,11,.95)'; ctx.lineWidth = 2.5; ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(g.sx, g.sy); ctx.lineTo(hx, hy); ctx.stroke(); ctx.setLineDash([]);
+    ctx.restore();
+    drawHandleGlyph(ctx, hx, hy, !!viaH);
+    if (!dd) {
+      ctx.save();
+      ctx.fillStyle = '#dc2626'; ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(hp.delx, hp.dely, 13, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(hp.delx - 5, hp.dely - 5); ctx.lineTo(hp.delx + 5, hp.dely + 5); ctx.moveTo(hp.delx + 5, hp.dely - 5); ctx.lineTo(hp.delx - 5, hp.dely + 5); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function extDraw() {
+    const ctx = cv.getContext('2d'), W = cv.width, H = cv.height;
+    if (state.previewMode === 'elevation') { drawElevHandle(ctx, W, H); return; }
+    elevHandle = null;
+    if (state.previewMode !== 'plan' || !lastPlanScale) return;
+    const P = lastPlanScale;
+    drawDrains(ctx, P, W, H);
     if (!dragState) { // أبعاد الكمر الحية الدائمة (يمين / شمال)
       const sb = getActiveSpanBeam(); if (!sb) return;
       const g = computeSpanBeamGeometry(sb, P.segments); if (!g || !Number.isFinite(g.distLeft1)) return;
@@ -5347,19 +5569,88 @@ end
     }
   }
 
-  // وضع البلاعة بلمسة على المسقط الأفقي
-  let lastPlace = 0;
-  function place(e) {
-    if (state.previewMode !== 'plan' || !lastPlanScale) return;
-    if (state.tool !== 'drain') { state.selDrain = null; return; }
-    e.stopImmediatePropagation();
-    if (Date.now() - lastPlace < 500) return; lastPlace = Date.now();
-    const t = e.touches ? e.touches[0] : e, r = cv.getBoundingClientRect();
-    const [mx, my] = lastPlanScale.toModel((t.clientX - r.left) * cv.width / r.width, (t.clientY - r.top) * cv.height / r.height);
-    const f = { id: Date.now(), x: +mx.toFixed(1), y: +my.toFixed(1), d: 10 };
-    state.floorItems.push(f); state.selDrain = f.id; renderCanvas();
+  // ============ اللمس: وضع البلاعة / سحبها / مقبض السحب للقطع ============
+  function hitDrain(cx, cy) {
+    const sel = state.floorItems.find((x) => x.id === state.selDrain);
+    if (sel) {
+      const hp = drainHandlePos(sel, cv.width, cv.height);
+      if (Math.hypot(cx - hp.hx, cy - hp.hy) <= 30) return { f: sel, kind: 'handle' };
+      if (Math.hypot(cx - hp.delx, cy - hp.dely) <= 22) return { f: sel, kind: 'del' };
+    }
+    for (let i = state.floorItems.length - 1; i >= 0; i--) {
+      const f = state.floorItems[i], g = drainGeom(f);
+      if (Math.hypot(cx - g.sx, cy - g.sy) <= g.r + 18) return { f, kind: 'body' };
+    }
+    return null;
   }
-  ['mousedown', 'touchstart'].forEach((n) => cv.addEventListener(n, place, { capture: true }));
+  function hzDown(e) {
+    const emu = e.type === 'mousedown' && Date.now() - lastTouchT < 800;
+    if (e.type === 'touchstart') lastTouchT = Date.now();
+    const { cx, cy } = canvasXY(e);
+
+    // مقبض سحب القطع في واجهة الحائط
+    if (state.previewMode === 'elevation' && elevHandle && !state.tool && !dragState && Math.hypot(cx - elevHandle.x, cy - elevHandle.y) <= 32) {
+      e.stopImmediatePropagation();
+      if (emu) return;
+      const h = elevHandle, el = h.el;
+      if (!el || el.locked || !lastElevationScale) return;
+      const L0 = getElementLeftX(lastElevationScale.wallLength, el);
+      dragState = {
+        mode: 'wallElement', el, viaHandle: true, startX: cx, startY: cy, smoothX: cx, smoothY: cy, lastX: cx, lastY: cy,
+        origLeftCm: L0, origSill: el.sill, primaryAxis: null, anchorX: cx, anchorY: cy, baseLeftCm: L0, baseSill: el.sill,
+        heightUnlocked: false, loupeDX: h.ecx - cx, loupeDY: h.ecy - cy
+      };
+      dragCursor = { cx, cy };
+      renderCanvas();
+      return;
+    }
+
+    if (state.previewMode !== 'plan' || !lastPlanScale) return;
+    if (state.tool && state.tool !== 'drain') { state.selDrain = null; return; }
+    const hit = hitDrain(cx, cy);
+    if (hit) {
+      e.stopImmediatePropagation();
+      if (emu) return;
+      if (hit.kind === 'del') {
+        state.floorItems = state.floorItems.filter((x) => x.id !== hit.f.id); state.selDrain = null;
+        renderCanvas(); try { syncUI(); } catch (err) {} return;
+      }
+      state.selDrain = hit.f.id;
+      const [mx, my] = lastPlanScale.toModel(cx, cy);
+      dd = { f: hit.f, via: hit.kind, dxm: hit.f.x - mx, dym: hit.f.y - my, cur: { cx, cy }, isNew: false };
+      renderCanvas();
+      return;
+    }
+    if (state.tool === 'drain') {
+      e.stopImmediatePropagation();
+      if (emu) return;
+      const [mx, my] = lastPlanScale.toModel(cx, cy);
+      const f = { id: Date.now(), x: +mx.toFixed(1), y: +my.toFixed(1), d: 10 };
+      state.floorItems.push(f); state.selDrain = f.id;
+      dd = { f, via: 'body', dxm: 0, dym: 0, cur: { cx, cy }, isNew: true };
+      renderCanvas();
+      return;
+    }
+    if (state.selDrain != null) { state.selDrain = null; renderCanvas(); }
+  }
+  function hzMove(e) {
+    if (!dd || !lastPlanScale) return;
+    const { cx, cy } = canvasXY(e), P = lastPlanScale, [mx, my] = P.toModel(cx, cy);
+    dd.cur = { cx, cy };
+    dd.f.x = +clampN(Math.round((mx + dd.dxm) * 2) / 2, P.minX, P.maxX).toFixed(1);
+    dd.f.y = +clampN(Math.round((my + dd.dym) * 2) / 2, P.minY, P.maxY).toFixed(1);
+    if (!ddRaf) { ddRaf = true; requestAnimationFrame(() => { ddRaf = false; renderCanvas(); }); }
+  }
+  function hzUp() {
+    if (!dd) return;
+    const d = dd; dd = null;
+    if (d.isNew && state.tool === 'drain') { try { setTool(null); } catch (err) {} }
+    renderCanvas(); try { syncUI(); } catch (err) {}
+  }
+  ['mousedown', 'touchstart'].forEach((n) => cv.addEventListener(n, hzDown, { capture: true }));
+  window.addEventListener('mousemove', hzMove);
+  window.addEventListener('touchmove', hzMove, { passive: true });
+  ['mouseup', 'touchend', 'touchcancel'].forEach((n) => window.addEventListener(n, hzUp));
 
   // الأسهم السفلية تحرّك البلاعة المحددة بنفس خطوة الضبط (1مم / 5مم / 1سم...)
   [['btnHudMoveRight', 1, 0], ['btnHudMoveLeft', -1, 0], ['btnHudMoveUp', 0, -1], ['btnHudMoveDown', 0, 1]].forEach(([id, dx, dy]) => {
@@ -7117,7 +7408,7 @@ end
         kindLabel: kindLabel || 'ملف مصدر',
         savedAt: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })
       });
-      if (list.length > 8) list.length = 8;
+      if (list.length > 30) list.length = 30;
       while (true) {
         try { localStorage.setItem(VAULT_STORAGE_KEY, JSON.stringify(list)); break; }
         catch (qe) { if (list.length <= 1) { list.length = 0; break; } list.pop(); }
@@ -7217,25 +7508,66 @@ end
   }
 
   async function triggerMobileShareOrSave(filename, content, mimeType) {
-    // بنجرب أكتر من نوع ملف لأن بعض الموبايلات (خصوصاً الآيفون) بترفض مشاركة text/html
+    // 1) مشاركة كملف: بنجرّب أكتر من نوع واسم لأن بعض الأجهزة بترفض الامتدادات الغريبة (.rb) أو text/html
     const base = (mimeType || 'text/plain').split(';')[0];
-    const types = Array.from(new Set([base, 'application/octet-stream', 'text/plain']));
-    for (const t of types) {
-      try {
-        const file = new File([content], filename, { type: t });
-        if (navigator.canShare && navigator.canShare({ files: [file] })) {
-          await navigator.share({ title: filename, files: [file] });
-          showAppToast('📲 اتفتحت قائمة المشاركة — اختار «حفظ في الملفات» أو واتساب لإتمام الحفظ', 'ok');
-          closeSavePickerModal();
-          return;
+    const types = Array.from(new Set(['text/plain', base, 'application/octet-stream']));
+    const names = [filename];
+    if (!/\.txt$/i.test(filename)) names.push(filename + '.txt');
+    if (navigator.share) {
+      for (const nm of names) {
+        for (const t of types) {
+          try {
+            const file = new File([content], nm, { type: t });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              await navigator.share({ title: nm, files: [file] });
+              showAppToast('📲 اتفتحت قائمة المشاركة — اختار «حفظ في الملفات» أو واتساب', 'ok');
+              closeSavePickerModal();
+              return;
+            }
+          } catch (err) {
+            if (err && err.name === 'AbortError') return;
+          }
         }
+      }
+      // 2) لو الجهاز مش بيقبل ملفات: نشاركه كنص عادي (واتساب وكل التطبيقات بتقبله)
+      try {
+        await navigator.share({ title: filename, text: content });
+        showAppToast('📲 اتشارك كنص — الصقه أو احفظه من التطبيق اللي اخترته', 'ok');
+        closeSavePickerModal();
+        return;
       } catch (err) {
         if (err && err.name === 'AbortError') return;
       }
     }
-    showAppToast('⚠️ الموبايل ده مش بيدعم مشاركة الملفات. جرّب «فتح في المتصفح» أو «معاينة للعميل الآن»', 'warn');
+    // 3) آخر حل: تنزيل مباشر (بدون رسالة خطأ مخيفة)
+    showAppToast('ℹ️ المتصفح ده مفيهوش قائمة مشاركة، هنزّل الملف مباشرة في Downloads', 'warn');
     triggerDirectBrowserDownload(filename, content, mimeType, true);
   }
+
+  // مشاركة باسم العميل على واتساب: ملف باسم العميل، وإن ماقبلش يتبعت كنص مع اسم العميل في أول سطر
+  window.shareToWhatsAppByClient = async function (content, ext, mimeType) {
+    const client = (state.clientName || '').trim() || 'عميل';
+    const safe = client.replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '_');
+    const filename = `${safe}${ext || '.rb'}`;
+    if (navigator.share) {
+      for (const nm of [filename, filename + '.txt']) {
+        try {
+          const file = new File([content], nm, { type: 'text/plain' });
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({ title: client, text: client, files: [file] });
+            return;
+          }
+        } catch (err) { if (err && err.name === 'AbortError') return; }
+      }
+      try { await navigator.share({ title: client, text: `${client}\n\n${content}` }); return; }
+      catch (err) { if (err && err.name === 'AbortError') return; }
+    }
+    // مفيش قائمة مشاركة: ننسخ الكود ونفتح واتساب برسالة فيها اسم العميل
+    try { await navigator.clipboard.writeText(`${client}\n\n${content}`); } catch (e) {}
+    const msg = encodeURIComponent(`${client}\n(الكود اتنسخ — الصقه هنا)`);
+    window.open(`https://wa.me/?text=${msg}`, '_blank');
+    showAppToast('📋 الكود اتنسخ باسم العميل — الصقه في واتساب', 'ok');
+  };
 
   function triggerDirectBrowserDownload(filename, content, mimeType, quiet) {
     try {
@@ -7332,6 +7664,12 @@ end
     if (!pendingSaveItem) return;
     const customName = (document.getElementById('inpSavePickerFileName')?.value || pendingSaveItem.filename).trim();
     triggerMobileShareOrSave(customName, pendingSaveItem.content, pendingSaveItem.mimeType);
+  });
+
+  document.getElementById('btnSaveViaWhatsApp')?.addEventListener('click', () => {
+    if (!pendingSaveItem) return;
+    const m = (pendingSaveItem.filename || '').match(/(\.[A-Za-z0-9]+)$/);
+    window.shareToWhatsAppByClient(pendingSaveItem.content, m ? m[1] : '.txt', pendingSaveItem.mimeType);
   });
 
   document.getElementById('btnSaveViaDirectDownload')?.addEventListener('click', () => {
